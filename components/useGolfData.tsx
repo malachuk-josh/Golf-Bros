@@ -8,12 +8,13 @@ import {
   useMemo,
   useState,
 } from "react";
-import type { CourseTemplate, Round, Settings } from "@/lib/types";
+import type { CourseTemplate, Player, Round, Settings } from "@/lib/types";
 import { DEFAULT_SETTINGS } from "@/lib/golf";
 
 interface GolfData {
   rounds: Round[];
   courses: CourseTemplate[];
+  players: Player[];
   settings: Settings;
   backend: "upstash" | "local" | "unknown";
   loading: boolean;
@@ -24,6 +25,8 @@ interface GolfData {
   saveSettings: (settings: Settings) => Promise<void>;
   saveCourse: (course: CourseTemplate) => Promise<void>;
   deleteCourse: (id: string) => Promise<void>;
+  savePlayer: (player: Player) => Promise<void>;
+  deletePlayer: (id: string) => Promise<void>;
 }
 
 const Ctx = createContext<GolfData | null>(null);
@@ -31,6 +34,7 @@ const Ctx = createContext<GolfData | null>(null);
 export function GolfDataProvider({ children }: { children: React.ReactNode }) {
   const [rounds, setRounds] = useState<Round[]>([]);
   const [courses, setCourses] = useState<CourseTemplate[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [backend, setBackend] = useState<GolfData["backend"]>("unknown");
   const [loading, setLoading] = useState(true);
@@ -39,19 +43,22 @@ export function GolfDataProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => {
     setError(null);
     try {
-      const [r, s, c] = await Promise.all([
+      const [r, s, c, p] = await Promise.all([
         fetch("/api/rounds", { cache: "no-store" }),
         fetch("/api/settings", { cache: "no-store" }),
         fetch("/api/courses", { cache: "no-store" }),
+        fetch("/api/players", { cache: "no-store" }),
       ]);
-      if (!r.ok || !s.ok || !c.ok) throw new Error("Failed to load data");
+      if (!r.ok || !s.ok || !c.ok || !p.ok) throw new Error("Failed to load data");
       const rj = await r.json();
       const sj = await s.json();
       const cj = await c.json();
+      const pj = await p.json();
       setRounds(rj.rounds || []);
       setBackend(rj.backend || "unknown");
-      setSettings({ ...DEFAULT_SETTINGS, ...(sj.settings || {}) });
+      setSettings({ ...DEFAULT_SETTINGS, seasonName: sj.settings?.seasonName ?? DEFAULT_SETTINGS.seasonName });
       setCourses(cj.courses || []);
+      setPlayers(pj.players || []);
     } catch (e: any) {
       setError(e?.message || "Something went wrong");
     } finally {
@@ -75,8 +82,7 @@ export function GolfDataProvider({ children }: { children: React.ReactNode }) {
       const next = idx >= 0 ? prev.map((r) => (r.id === round.id ? round : r)) : [round, ...prev];
       return next.sort(
         (a, b) =>
-          new Date(b.date).getTime() - new Date(a.date).getTime() ||
-          b.createdAt - a.createdAt
+          new Date(b.date).getTime() - new Date(a.date).getTime() || b.createdAt - a.createdAt
       );
     });
   }, []);
@@ -112,17 +118,36 @@ export function GolfDataProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const deleteCourse = useCallback(async (id: string) => {
-    const res = await fetch(`/api/courses?id=${encodeURIComponent(id)}`, {
-      method: "DELETE",
-    });
+    const res = await fetch(`/api/courses?id=${encodeURIComponent(id)}`, { method: "DELETE" });
     if (!res.ok) throw new Error("Failed to delete course");
     setCourses((prev) => prev.filter((c) => c.id !== id));
+  }, []);
+
+  const savePlayer = useCallback(async (player: Player) => {
+    const res = await fetch("/api/players", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(player),
+    });
+    if (!res.ok) throw new Error("Failed to save player");
+    setPlayers((prev) => {
+      const idx = prev.findIndex((p) => p.id === player.id);
+      const next = idx >= 0 ? prev.map((p) => (p.id === player.id ? player : p)) : [...prev, player];
+      return next.sort((a, b) => a.createdAt - b.createdAt);
+    });
+  }, []);
+
+  const deletePlayer = useCallback(async (id: string) => {
+    const res = await fetch(`/api/players?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Failed to delete player");
+    setPlayers((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
   const value = useMemo<GolfData>(
     () => ({
       rounds,
       courses,
+      players,
       settings,
       backend,
       loading,
@@ -133,8 +158,10 @@ export function GolfDataProvider({ children }: { children: React.ReactNode }) {
       saveSettings,
       saveCourse,
       deleteCourse,
+      savePlayer,
+      deletePlayer,
     }),
-    [rounds, courses, settings, backend, loading, error, refresh, saveRound, deleteRound, saveSettings, saveCourse, deleteCourse]
+    [rounds, courses, players, settings, backend, loading, error, refresh, saveRound, deleteRound, saveSettings, saveCourse, deleteCourse, savePlayer, deletePlayer]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

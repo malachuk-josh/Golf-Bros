@@ -1,66 +1,93 @@
 import type {
   CourseTemplate,
   MatchResult,
+  Player,
   PlayerId,
   Round,
   RoundTotals,
   Settings,
 } from "./types";
 
-export const PLAYER_IDS: PlayerId[] = ["p1", "p2"];
-
 export const DEFAULT_SETTINGS: Settings = {
-  players: { p1: "Player 1", p2: "Player 2" },
-  handicaps: { p1: 0, p2: 0 },
   seasonName: "Our Golf Season",
 };
 
-/** Standard par + stroke-index layout used to seed a fresh scorecard. */
+/** Palette assigned to new players (for avatars + trend lines). */
+export const PLAYER_COLORS = [
+  "#247334",
+  "#c2410c",
+  "#1d4ed8",
+  "#7c3aed",
+  "#db2777",
+  "#0891b2",
+  "#ca8a04",
+  "#475569",
+];
+
+export function nextPlayerColor(existing: Player[]): string {
+  const used = new Set(existing.map((p) => p.color));
+  return PLAYER_COLORS.find((c) => !used.has(c)) || PLAYER_COLORS[existing.length % PLAYER_COLORS.length];
+}
+
+export function uid(): string {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `id_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
 const DEFAULT_PAR_18 = [4, 4, 5, 3, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 5, 4];
-// Unique 1–18 ranking (odds on the front, evens on the back — a common layout).
 const DEFAULT_SI_18 = [7, 3, 15, 5, 11, 1, 17, 9, 13, 8, 4, 16, 6, 12, 2, 18, 10, 14];
 
 function num(v: number | null | undefined): number | null {
   return typeof v === "number" && v > 0 ? v : null;
 }
 
+/** Participants in a round, tolerant of legacy rounds without `playerIds`. */
+export function roundPlayers(round: Round): PlayerId[] {
+  if (round.playerIds && round.playerIds.length) return round.playerIds;
+  if (round.handicaps && Object.keys(round.handicaps).length)
+    return Object.keys(round.handicaps);
+  const first = round.holes?.[0]?.strokes;
+  if (first) return Object.keys(first);
+  return ["p1", "p2"];
+}
+
 export function defaultHoles(
   holeCount: 9 | 18,
+  players: PlayerId[],
   nine: "front" | "back" | "single" = "front"
 ) {
   let pars: number[];
-  if (holeCount === 18) {
-    pars = DEFAULT_PAR_18;
-  } else if (nine === "back") {
-    pars = DEFAULT_PAR_18.slice(9, 18);
-  } else {
-    pars = DEFAULT_PAR_18.slice(0, 9);
-  }
+  if (holeCount === 18) pars = DEFAULT_PAR_18;
+  else if (nine === "back") pars = DEFAULT_PAR_18.slice(9, 18);
+  else pars = DEFAULT_PAR_18.slice(0, 9);
+
+  const blankStrokes = () =>
+    Object.fromEntries(players.map((p) => [p, null])) as Record<PlayerId, number | null>;
+
   return pars.map((par, i) => ({
     hole: i + 1,
     par,
-    // 18-hole rounds use the real stroke-index table; a standalone nine ranks 1–9 by hole.
     si: holeCount === 18 ? DEFAULT_SI_18[i] : i + 1,
-    strokes: { p1: null as number | null, p2: null as number | null },
+    strokes: blankStrokes(),
   }));
 }
 
 export function newRound(
-  holeCount: 9 | 18 = 18,
-  handicaps?: Record<PlayerId, number>
+  holeCount: 9 | 18,
+  players: Player[]
 ): Round {
   const now = Date.now();
+  const ids = players.map((p) => p.id);
   return {
-    id:
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `r_${now}_${Math.random().toString(36).slice(2, 8)}`,
+    id: uid(),
     date: new Date().toISOString().slice(0, 10),
     course: "",
     holeCount,
     nine: holeCount === 9 ? "front" : undefined,
-    holes: defaultHoles(holeCount),
-    handicaps: handicaps ? { ...handicaps } : { p1: 0, p2: 0 },
+    playerIds: ids,
+    holes: defaultHoles(holeCount, ids),
+    handicaps: Object.fromEntries(players.map((p) => [p.id, p.handicap])),
     notes: "",
     createdAt: now,
     updatedAt: now,
@@ -69,9 +96,7 @@ export function newRound(
 
 /**
  * Allocate a player's handicap strokes across the holes of a round using stroke
- * index (hardest holes get strokes first; wraps for handicaps > hole count).
- * Handicap is halved for a 9-hole round. Returns strokes received per hole,
- * indexed to `round.holes`.
+ * index (hardest holes first; wraps for handicaps > hole count; halved for 9s).
  */
 export function allocateStrokes(round: Round, handicap: number): number[] {
   const n = round.holes.length;
@@ -82,59 +107,50 @@ export function allocateStrokes(round: Round, handicap: number): number[] {
   const order = round.holes
     .map((h, i) => ({ i, si: h.si ?? i + 1 }))
     .sort((a, b) => a.si - b.si);
-  for (let k = 0; k < total; k++) {
-    received[order[k % n].i] += 1;
-  }
+  for (let k = 0; k < total; k++) received[order[k % n].i] += 1;
   return received;
 }
 
-function handicapsOf(round: Round): Record<PlayerId, number> {
-  return round.handicaps ?? { p1: 0, p2: 0 };
-}
-
-export function matchResult(round: Round): MatchResult {
-  const holesWon = { p1: 0, p2: 0 } as Record<PlayerId, number>;
+export function matchResult(round: Round, a: PlayerId, b: PlayerId): MatchResult {
+  const holesWon = { [a]: 0, [b]: 0 } as Record<PlayerId, number>;
   let halved = 0;
-  let diff = 0; // positive = p1 ahead
+  let diff = 0; // positive = a ahead
 
   const bothCount = round.holes.filter(
-    (h) => num(h.strokes.p1) !== null && num(h.strokes.p2) !== null
+    (h) => num(h.strokes[a]) !== null && num(h.strokes[b]) !== null
   ).length;
   let remaining = bothCount;
-
   let decided = false;
   let closeMargin = 0;
   let closeRemaining = 0;
   let closeLeader: PlayerId | null = null;
 
   for (const h of round.holes) {
-    const a = num(h.strokes.p1);
-    const b = num(h.strokes.p2);
-    if (a === null || b === null) continue;
+    const sa = num(h.strokes[a]);
+    const sb = num(h.strokes[b]);
+    if (sa === null || sb === null) continue;
     remaining--;
-    if (a < b) {
-      holesWon.p1++;
+    if (sa < sb) {
+      holesWon[a]++;
       diff++;
-    } else if (b < a) {
-      holesWon.p2++;
+    } else if (sb < sa) {
+      holesWon[b]++;
       diff--;
-    } else {
-      halved++;
-    }
+    } else halved++;
     if (!decided && Math.abs(diff) > remaining) {
       decided = true;
       closeMargin = Math.abs(diff);
       closeRemaining = remaining;
-      closeLeader = diff > 0 ? "p1" : "p2";
+      closeLeader = diff > 0 ? a : b;
     }
   }
 
-  if (bothCount === 0) {
-    return { holesWon, halved, margin: 0, leader: null, label: "—", closedOut: false };
-  }
+  if (bothCount === 0)
+    return { players: [a, b], holesWon, halved, margin: 0, leader: null, label: "—", closedOut: false };
 
-  if (decided && closeRemaining > 0) {
+  if (decided && closeRemaining > 0)
     return {
+      players: [a, b],
       holesWon,
       halved,
       margin: closeMargin,
@@ -142,11 +158,11 @@ export function matchResult(round: Round): MatchResult {
       label: `${closeMargin}&${closeRemaining}`,
       closedOut: true,
     };
-  }
 
   const margin = Math.abs(diff);
-  const leader: PlayerId | "tie" = margin === 0 ? "tie" : diff > 0 ? "p1" : "p2";
+  const leader: PlayerId | "tie" = margin === 0 ? "tie" : diff > 0 ? a : b;
   return {
+    players: [a, b],
     holesWon,
     halved,
     margin,
@@ -157,21 +173,19 @@ export function matchResult(round: Round): MatchResult {
 }
 
 export function roundTotals(round: Round): RoundTotals {
-  const hcp = handicapsOf(round);
-  const received: Record<PlayerId, number[]> = {
-    p1: allocateStrokes(round, hcp.p1),
-    p2: allocateStrokes(round, hcp.p2),
-  };
+  const players = roundPlayers(round);
+  const hcp = round.handicaps || {};
+  const received: Record<PlayerId, number[]> = {};
+  for (const pid of players) received[pid] = allocateStrokes(round, hcp[pid] ?? 0);
 
-  const byPlayer = {
-    p1: { strokes: 0, par: 0, toPar: 0, holesPlayed: 0, net: 0, strokesReceived: 0 },
-    p2: { strokes: 0, par: 0, toPar: 0, holesPlayed: 0, net: 0, strokesReceived: 0 },
-  } as RoundTotals["byPlayer"];
+  const byPlayer: RoundTotals["byPlayer"] = {};
+  for (const pid of players)
+    byPlayer[pid] = { strokes: 0, par: 0, toPar: 0, holesPlayed: 0, net: 0, strokesReceived: 0 };
 
   let par = 0;
   round.holes.forEach((h, idx) => {
     par += h.par;
-    for (const pid of PLAYER_IDS) {
+    for (const pid of players) {
       const s = num(h.strokes[pid]);
       if (s !== null) {
         byPlayer[pid].strokes += s;
@@ -182,73 +196,83 @@ export function roundTotals(round: Round): RoundTotals {
       }
     }
   });
-
-  for (const pid of PLAYER_IDS) {
-    byPlayer[pid].toPar = byPlayer[pid].strokes - byPlayer[pid].par;
-  }
+  for (const pid of players) byPlayer[pid].toPar = byPlayer[pid].strokes - byPlayer[pid].par;
 
   const complete =
     round.holes.length > 0 &&
-    byPlayer.p1.holesPlayed === round.holes.length &&
-    byPlayer.p2.holesPlayed === round.holes.length;
+    players.length > 0 &&
+    players.every((pid) => byPlayer[pid].holesPlayed === round.holes.length);
 
-  function decide(a: number, b: number): PlayerId | "tie" | null {
+  function bestBy(metric: (pid: PlayerId) => number): PlayerId | "tie" | null {
     if (!complete) return null;
-    if (a < b) return "p1";
-    if (b < a) return "p2";
-    return "tie";
+    let min = Infinity;
+    let count = 0;
+    let who: PlayerId = players[0];
+    for (const pid of players) {
+      const v = metric(pid);
+      if (v < min) {
+        min = v;
+        who = pid;
+        count = 1;
+      } else if (v === min) count++;
+    }
+    return count > 1 ? "tie" : who;
   }
 
   return {
     byPlayer,
+    players,
     par,
-    winner: decide(byPlayer.p1.strokes, byPlayer.p2.strokes),
-    netWinner: decide(byPlayer.p1.net, byPlayer.p2.net),
+    winner: bestBy((pid) => byPlayer[pid].strokes),
+    netWinner: bestBy((pid) => byPlayer[pid].net),
     complete,
-    match: matchResult(round),
+    match:
+      players.length === 2 ? matchResult(round, players[0], players[1]) : null,
   };
 }
 
 export function isComplete(round: Round): boolean {
-  if (round.holes.length === 0) return false;
-  return round.holes.every(
-    (h) => num(h.strokes.p1) !== null && num(h.strokes.p2) !== null
+  const players = roundPlayers(round);
+  if (round.holes.length === 0 || players.length === 0) return false;
+  return round.holes.every((h) =>
+    players.every((pid) => num(h.strokes[pid]) !== null)
   );
 }
 
-export interface SeasonStats {
+// ---------------------------------------------------------------------------
+// Season aggregates (per player, completed rounds only)
+// ---------------------------------------------------------------------------
+
+export interface PlayerSeasonStat {
+  playerId: PlayerId;
   rounds: number;
-  completedRounds: number;
-  byPlayer: Record<
-    PlayerId,
-    {
-      wins: number; // gross
-      losses: number;
-      ties: number;
-      netWins: number;
-      netLosses: number;
-      netTies: number;
-      matchWins: number;
-      matchLosses: number;
-      matchHalved: number;
-      totalStrokes: number;
-      totalPar: number;
-      holesPlayed: number;
-      avgToPar: number;
-      avgPerHole: number;
-      bestRoundToPar: number | null;
-      bestRoundId: string | null;
-      eagles: number;
-      birdies: number;
-      pars: number;
-      bogeys: number;
-      doublePlus: number;
-    }
-  >;
+  wins: number;
+  losses: number;
+  ties: number;
+  netWins: number;
+  netLosses: number;
+  netTies: number;
+  matchWins: number;
+  matchLosses: number;
+  matchHalved: number;
+  totalStrokes: number;
+  totalPar: number;
+  holesPlayed: number;
+  avgToPar: number;
+  avgPerHole: number;
+  bestRoundToPar: number | null;
+  bestRoundId: string | null;
+  eagles: number;
+  birdies: number;
+  pars: number;
+  bogeys: number;
+  doublePlus: number;
 }
 
-export function emptyPlayerStat() {
+function emptyStat(playerId: PlayerId): PlayerSeasonStat {
   return {
+    playerId,
+    rounds: 0,
     wins: 0,
     losses: 0,
     ties: 0,
@@ -263,8 +287,8 @@ export function emptyPlayerStat() {
     holesPlayed: 0,
     avgToPar: 0,
     avgPerHole: 0,
-    bestRoundToPar: null as number | null,
-    bestRoundId: null as string | null,
+    bestRoundToPar: null,
+    bestRoundId: null,
     eagles: 0,
     birdies: 0,
     pars: 0,
@@ -273,31 +297,33 @@ export function emptyPlayerStat() {
   };
 }
 
+export interface SeasonStats {
+  rounds: number;
+  completedRounds: number;
+  byPlayer: Record<PlayerId, PlayerSeasonStat>;
+}
+
 /**
- * Season aggregates. Only fully completed rounds count toward every stat here —
- * in-progress rounds show up in History but never skew averages, records, or
- * the distribution. This keeps Standings, Stats, and Trends consistent.
+ * Per-player season aggregates over fully completed rounds only. In-progress
+ * rounds appear in the Season list but never skew stats.
  */
 export function seasonStats(rounds: Round[]): SeasonStats {
   const completed = rounds.filter(isComplete);
-  const stats: SeasonStats = {
-    rounds: rounds.length,
-    completedRounds: completed.length,
-    byPlayer: { p1: emptyPlayerStat(), p2: emptyPlayerStat() },
-  };
+  const byPlayer: Record<PlayerId, PlayerSeasonStat> = {};
+  const get = (pid: PlayerId) => (byPlayer[pid] ||= emptyStat(pid));
 
   for (const round of completed) {
     const t = roundTotals(round);
-    for (const pid of PLAYER_IDS) {
-      const ps = stats.byPlayer[pid];
+    for (const pid of t.players) {
+      const ps = get(pid);
       const pt = t.byPlayer[pid];
+      ps.rounds += 1;
       ps.totalStrokes += pt.strokes;
       ps.totalPar += pt.par;
       ps.holesPlayed += pt.holesPlayed;
-
       for (const h of round.holes) {
-        const s = h.strokes[pid];
-        if (typeof s === "number" && s > 0) {
+        const s = num(h.strokes[pid]);
+        if (s !== null) {
           const diff = s - h.par;
           if (diff <= -2) ps.eagles += 1;
           else if (diff === -1) ps.birdies += 1;
@@ -306,63 +332,73 @@ export function seasonStats(rounds: Round[]): SeasonStats {
           else ps.doublePlus += 1;
         }
       }
-
       if (ps.bestRoundToPar === null || pt.toPar < ps.bestRoundToPar) {
         ps.bestRoundToPar = pt.toPar;
         ps.bestRoundId = round.id;
       }
     }
 
-    // gross record
-    if (t.winner === "p1") {
-      stats.byPlayer.p1.wins++;
-      stats.byPlayer.p2.losses++;
-    } else if (t.winner === "p2") {
-      stats.byPlayer.p2.wins++;
-      stats.byPlayer.p1.losses++;
-    } else if (t.winner === "tie") {
-      stats.byPlayer.p1.ties++;
-      stats.byPlayer.p2.ties++;
+    // gross / net win-loss per round outcome
+    for (const pid of t.players) {
+      const ps = get(pid);
+      if (t.winner === "tie") ps.ties += 1;
+      else if (t.winner === pid) ps.wins += 1;
+      else ps.losses += 1;
+      if (t.netWinner === "tie") ps.netTies += 1;
+      else if (t.netWinner === pid) ps.netWins += 1;
+      else ps.netLosses += 1;
     }
 
-    // net record
-    if (t.netWinner === "p1") {
-      stats.byPlayer.p1.netWins++;
-      stats.byPlayer.p2.netLosses++;
-    } else if (t.netWinner === "p2") {
-      stats.byPlayer.p2.netWins++;
-      stats.byPlayer.p1.netLosses++;
-    } else if (t.netWinner === "tie") {
-      stats.byPlayer.p1.netTies++;
-      stats.byPlayer.p2.netTies++;
-    }
-
-    // match-play record
-    if (t.match.leader === "p1") {
-      stats.byPlayer.p1.matchWins++;
-      stats.byPlayer.p2.matchLosses++;
-    } else if (t.match.leader === "p2") {
-      stats.byPlayer.p2.matchWins++;
-      stats.byPlayer.p1.matchLosses++;
-    } else if (t.match.leader === "tie") {
-      stats.byPlayer.p1.matchHalved++;
-      stats.byPlayer.p2.matchHalved++;
+    // match play (two-player rounds only)
+    if (t.match) {
+      const [a, b] = t.match.players;
+      if (t.match.leader === "tie") {
+        get(a).matchHalved += 1;
+        get(b).matchHalved += 1;
+      } else if (t.match.leader === a) {
+        get(a).matchWins += 1;
+        get(b).matchLosses += 1;
+      } else if (t.match.leader === b) {
+        get(b).matchWins += 1;
+        get(a).matchLosses += 1;
+      }
     }
   }
 
-  for (const pid of PLAYER_IDS) {
-    const ps = stats.byPlayer[pid];
+  for (const pid of Object.keys(byPlayer)) {
+    const ps = byPlayer[pid];
     ps.avgPerHole = ps.holesPlayed > 0 ? ps.totalStrokes / ps.holesPlayed : 0;
-    ps.avgToPar =
-      stats.completedRounds > 0
-        ? (ps.totalStrokes - ps.totalPar) / stats.completedRounds
-        : 0;
+    ps.avgToPar = ps.rounds > 0 ? (ps.totalStrokes - ps.totalPar) / ps.rounds : 0;
   }
 
-  return stats;
+  return { rounds: rounds.length, completedRounds: completed.length, byPlayer };
 }
 
-/** Total par a course plays to for its default round (18 when it plays twice). */
+/** Pairwise gross record between two players over completed rounds they shared. */
+export function headToHead(rounds: Round[], a: PlayerId, b: PlayerId) {
+  let aWins = 0,
+    bWins = 0,
+    ties = 0,
+    shared = 0;
+  for (const round of rounds) {
+    if (!isComplete(round)) continue;
+    const players = roundPlayers(round);
+    if (!players.includes(a) || !players.includes(b)) continue;
+    shared++;
+    const t = roundTotals(round);
+    const sa = t.byPlayer[a].strokes;
+    const sb = t.byPlayer[b].strokes;
+    if (sa < sb) aWins++;
+    else if (sb < sa) bWins++;
+    else ties++;
+  }
+  return { aWins, bWins, ties, shared };
+}
+
+// ---------------------------------------------------------------------------
+// Course templates → rounds
+// ---------------------------------------------------------------------------
+
 export function courseNinePar(course: CourseTemplate): number {
   return course.pars.slice(0, 9).reduce((a, b) => a + b, 0);
 }
@@ -372,37 +408,28 @@ export function courseDefaultPar(course: CourseTemplate): number {
   return course.playsTwice ? courseNinePar(course) * 2 : courseNinePar(course);
 }
 
-/** Which target hole counts a course supports playing. */
 export function courseOptions(course: CourseTemplate): (9 | 18)[] {
   if (course.holeCount === 18) return [18, 9];
   return course.playsTwice ? [9, 18] : [9];
 }
 
-/**
- * Build a fresh round from a saved course at the requested hole count.
- * - 18-hole course → play 18, or the front/back nine.
- * - 9-hole course → play the nine, or (if it plays twice) two loops of 18 with
- *   the back nine mirroring the front.
- */
 export function roundFromCourse(
   course: CourseTemplate,
   target: 9 | 18,
-  nine: "front" | "back" = "front",
-  handicaps?: Record<PlayerId, number>
+  nine: "front" | "back",
+  players: Player[]
 ): Round {
-  const base = newRound(target, handicaps);
+  const base = newRound(target, players);
   base.course = course.name;
+  const ids = players.map((p) => p.id);
+  const blank = () => Object.fromEntries(ids.map((p) => [p, null])) as Record<PlayerId, number | null>;
 
   type H = { hole: number; par: number; si: number };
   let holes: H[] = [];
 
   if (course.holeCount === 18) {
     if (target === 18) {
-      holes = course.pars.map((par, i) => ({
-        hole: i + 1,
-        par,
-        si: course.sis[i] ?? i + 1,
-      }));
+      holes = course.pars.map((par, i) => ({ hole: i + 1, par, si: course.sis[i] ?? i + 1 }));
     } else {
       const start = nine === "back" ? 9 : 0;
       holes = course.pars.slice(start, start + 9).map((par, i) => ({
@@ -413,16 +440,10 @@ export function roundFromCourse(
       base.nine = nine;
     }
   } else {
-    // 9-hole course
     if (target === 9) {
-      holes = course.pars.map((par, i) => ({
-        hole: i + 1,
-        par,
-        si: course.sis[i] ?? i + 1,
-      }));
+      holes = course.pars.map((par, i) => ({ hole: i + 1, par, si: course.sis[i] ?? i + 1 }));
       base.nine = "single";
     } else {
-      // play it twice
       holes = Array.from({ length: 18 }, (_, i) => ({
         hole: i + 1,
         par: course.pars[i % 9],
@@ -432,10 +453,7 @@ export function roundFromCourse(
   }
 
   base.holeCount = target;
-  base.holes = holes.map((h) => ({
-    ...h,
-    strokes: { p1: null as number | null, p2: null as number | null },
-  }));
+  base.holes = holes.map((h) => ({ ...h, strokes: blank() }));
   return base;
 }
 

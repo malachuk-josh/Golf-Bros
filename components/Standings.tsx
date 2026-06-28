@@ -1,106 +1,57 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Round, Settings } from "@/lib/types";
-import { PLAYER_IDS, formatToPar, seasonStats } from "@/lib/golf";
+import type { Player, Round } from "@/lib/types";
+import { formatToPar, headToHead, seasonStats } from "@/lib/golf";
 
 type Mode = "gross" | "net" | "match";
 
 export default function Standings({
   rounds,
-  settings,
+  players,
 }: {
   rounds: Round[];
-  settings: Settings;
+  players: Player[];
 }) {
   const stats = useMemo(() => seasonStats(rounds), [rounds]);
   const [mode, setMode] = useState<Mode>("gross");
 
-  if (rounds.length === 0) return <EmptyState />;
+  const nameOf = (id: string) => players.find((p) => p.id === id)?.name || "Player";
+  const colorOf = (id: string) => players.find((p) => p.id === id)?.color || "#475569";
 
-  const [a, b] = PLAYER_IDS;
-  const sa = stats.byPlayer[a];
-  const sb = stats.byPlayer[b];
+  // roster players that have at least one completed round
+  const ranked = useMemo(() => {
+    const rows = Object.values(stats.byPlayer).filter((s) => s.rounds > 0);
+    const wins = (s: (typeof rows)[number]) =>
+      mode === "gross" ? s.wins : mode === "net" ? s.netWins : s.matchWins;
+    return rows.sort((a, b) => {
+      const dw = wins(b) - wins(a);
+      if (dw !== 0) return dw;
+      return a.avgToPar - b.avgToPar; // tiebreak: better scoring average
+    });
+  }, [stats, mode]);
 
-  // headline record depends on mode
-  const rec = {
-    gross: { a: sa.wins, b: sb.wins, ties: sa.ties, label: "Gross wins" },
-    net: { a: sa.netWins, b: sb.netWins, ties: sa.netTies, label: "Net wins" },
-    match: { a: sa.matchWins, b: sb.matchWins, ties: sa.matchHalved, label: "Matches won" },
-  }[mode];
+  if (rounds.length === 0 || ranked.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-fairway-300 bg-white/60 p-10 text-center">
+        <div className="text-4xl">🏆</div>
+        <p className="mt-2 font-semibold text-fairway-700">No completed rounds yet</p>
+        <p className="text-sm text-fairway-500">Finish a round to populate the leaderboard.</p>
+      </div>
+    );
+  }
 
-  const rows: { label: string; a: string; b: string; better?: "a" | "b" | "tie" }[] = [
-    {
-      label: rec.label,
-      a: String(rec.a),
-      b: String(rec.b),
-      better: rec.a === rec.b ? "tie" : rec.a > rec.b ? "a" : "b",
-    },
-    {
-      label: "Scoring avg vs par",
-      a: stats.completedRounds ? formatToPar(Math.round(sa.avgToPar)) : "—",
-      b: stats.completedRounds ? formatToPar(Math.round(sb.avgToPar)) : "—",
-      better: !stats.completedRounds
-        ? undefined
-        : sa.avgToPar === sb.avgToPar
-        ? "tie"
-        : sa.avgToPar < sb.avgToPar
-        ? "a"
-        : "b",
-    },
-    {
-      label: "Avg strokes / hole",
-      a: sa.holesPlayed ? sa.avgPerHole.toFixed(2) : "—",
-      b: sb.holesPlayed ? sb.avgPerHole.toFixed(2) : "—",
-      better: !sa.holesPlayed || !sb.holesPlayed
-        ? undefined
-        : sa.avgPerHole === sb.avgPerHole
-        ? "tie"
-        : sa.avgPerHole < sb.avgPerHole
-        ? "a"
-        : "b",
-    },
-    {
-      label: "Best round",
-      a: sa.bestRoundToPar !== null ? formatToPar(sa.bestRoundToPar) : "—",
-      b: sb.bestRoundToPar !== null ? formatToPar(sb.bestRoundToPar) : "—",
-      better: sa.bestRoundToPar === null || sb.bestRoundToPar === null
-        ? undefined
-        : sa.bestRoundToPar === sb.bestRoundToPar
-        ? "tie"
-        : sa.bestRoundToPar < sb.bestRoundToPar
-        ? "a"
-        : "b",
-    },
-    {
-      label: "Birdies (or better)",
-      a: String(sa.eagles + sa.birdies),
-      b: String(sb.eagles + sb.birdies),
-      better:
-        sa.eagles + sa.birdies === sb.eagles + sb.birdies
-          ? "tie"
-          : sa.eagles + sa.birdies > sb.eagles + sb.birdies
-          ? "a"
-          : "b",
-    },
-  ];
-
-  const totalDecisive = rec.a + rec.b + rec.ties;
+  const winsLabel = mode === "match" ? "Matches" : mode === "net" ? "Net W-L" : "Gross W-L";
 
   return (
     <div className="space-y-5">
-      {/* mode toggle */}
       <div className="flex justify-center">
         <div className="inline-flex overflow-hidden rounded-lg border border-fairway-300">
           {(["gross", "net", "match"] as const).map((md) => (
             <button
               key={md}
               onClick={() => setMode(md)}
-              className={`px-4 py-1.5 text-sm font-semibold capitalize transition ${
-                mode === md
-                  ? "bg-fairway-600 text-white"
-                  : "bg-white text-fairway-700 hover:bg-fairway-50"
-              }`}
+              className={`px-4 py-1.5 text-sm font-semibold capitalize transition ${mode === md ? "bg-fairway-600 text-white" : "bg-white text-fairway-700 hover:bg-fairway-50"}`}
             >
               {md === "match" ? "Match play" : md}
             </button>
@@ -108,114 +59,109 @@ export default function Standings({
         </div>
       </div>
 
-      {/* Head-to-head banner */}
-      <div className="rounded-2xl border border-fairway-200 bg-white p-5 shadow-sm">
-        <h2 className="mb-1 text-center text-sm font-semibold uppercase tracking-wide text-fairway-500">
-          {mode === "net" ? "Net" : mode === "match" ? "Match-play" : "Gross"} Head-to-Head
-        </h2>
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-          <PlayerCard name={settings.players[a]} wins={rec.a} mode={mode} highlight={rec.a > rec.b} />
-          <div className="text-center">
-            <div className="text-3xl font-black text-fairway-700">
-              {rec.a}<span className="mx-1 text-fairway-300">–</span>{rec.b}
-            </div>
-            {rec.ties > 0 && (
-              <div className="text-xs text-fairway-500">
-                {rec.ties} {mode === "match" ? "halved" : "tied"}
-              </div>
-            )}
-            <div className="mt-1 text-xs text-fairway-400">
-              {totalDecisive} {totalDecisive === 1 ? "round" : "rounds"}
-            </div>
-          </div>
-          <PlayerCard name={settings.players[b]} wins={rec.b} mode={mode} highlight={rec.b > rec.a} right />
-        </div>
-      </div>
-
-      {/* Comparison table */}
-      <div className="overflow-hidden rounded-2xl border border-fairway-200 bg-white shadow-sm">
+      {/* Leaderboard */}
+      <div className="overflow-x-auto rounded-2xl border border-fairway-200 bg-white shadow-sm">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-fairway-50 text-fairway-700">
-              <th className="px-4 py-2 text-right font-semibold">{settings.players[a]}</th>
-              <th className="px-4 py-2 text-center font-medium text-fairway-400">Stat</th>
-              <th className="px-4 py-2 text-left font-semibold">{settings.players[b]}</th>
+            <tr className="bg-fairway-50 text-left text-fairway-600">
+              <th className="px-3 py-2 font-semibold">#</th>
+              <th className="px-3 py-2 font-semibold">Player</th>
+              <th className="px-2 py-2 text-center font-semibold">{winsLabel}</th>
+              <th className="px-2 py-2 text-center font-semibold">Rounds</th>
+              <th className="px-2 py-2 text-center font-semibold">Avg vs par</th>
+              <th className="px-2 py-2 text-center font-semibold">Avg/hole</th>
+              <th className="px-2 py-2 text-center font-semibold">Best</th>
+              <th className="px-2 py-2 text-center font-semibold">Birdies+</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr key={row.label} className="border-t border-fairway-100">
-                <td className={`px-4 py-2.5 text-right text-lg font-bold ${row.better === "a" ? "text-fairway-700" : "text-fairway-900/70"}`}>
-                  {row.a}
-                  {row.better === "a" && <WinDot />}
-                </td>
-                <td className="px-4 py-2.5 text-center text-xs font-medium uppercase tracking-wide text-fairway-400">
-                  {row.label}
-                </td>
-                <td className={`px-4 py-2.5 text-left text-lg font-bold ${row.better === "b" ? "text-fairway-700" : "text-fairway-900/70"}`}>
-                  {row.better === "b" && <WinDot />}
-                  {row.b}
-                </td>
-              </tr>
-            ))}
+            {ranked.map((s, i) => {
+              const w =
+                mode === "gross"
+                  ? `${s.wins}-${s.losses}-${s.ties}`
+                  : mode === "net"
+                  ? `${s.netWins}-${s.netLosses}-${s.netTies}`
+                  : `${s.matchWins}-${s.matchLosses}-${s.matchHalved}`;
+              return (
+                <tr key={s.playerId} className="border-t border-fairway-100">
+                  <td className="px-3 py-2.5 font-bold text-fairway-400">{i + 1}</td>
+                  <td className="px-3 py-2.5 font-semibold text-fairway-900">
+                    <span className="inline-flex items-center gap-2">
+                      <span className="inline-block h-3 w-3 rounded-full" style={{ background: colorOf(s.playerId) }} />
+                      {nameOf(s.playerId)}
+                    </span>
+                  </td>
+                  <td className="px-2 py-2.5 text-center font-bold">{w}</td>
+                  <td className="px-2 py-2.5 text-center">{s.rounds}</td>
+                  <td className="px-2 py-2.5 text-center">{formatToPar(Math.round(s.avgToPar))}</td>
+                  <td className="px-2 py-2.5 text-center">{s.avgPerHole.toFixed(2)}</td>
+                  <td className="px-2 py-2.5 text-center">{s.bestRoundToPar !== null ? formatToPar(s.bestRoundToPar) : "—"}</td>
+                  <td className="px-2 py-2.5 text-center">{s.eagles + s.birdies}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
+
+      <HeadToHead rounds={rounds} players={players.filter((p) => stats.byPlayer[p.id]?.rounds > 0)} nameOf={nameOf} colorOf={colorOf} />
+
       <p className="text-center text-xs text-fairway-400">
-        All season stats count only fully completed rounds
-        {stats.completedRounds !== stats.rounds
-          ? ` — ${stats.rounds - stats.completedRounds} in-progress round${
-              stats.rounds - stats.completedRounds === 1 ? "" : "s"
-            } excluded.`
-          : "."}
+        Leaderboard counts completed rounds only{stats.completedRounds !== stats.rounds ? ` (${stats.rounds - stats.completedRounds} in progress excluded)` : ""}. “Match” counts two-player rounds.
       </p>
     </div>
   );
 }
 
-function PlayerCard({
-  name,
-  wins,
-  mode,
-  highlight,
-  right,
+function HeadToHead({
+  rounds,
+  players,
+  nameOf,
+  colorOf,
 }: {
-  name: string;
-  wins: number;
-  mode: Mode;
-  highlight: boolean;
-  right?: boolean;
+  rounds: Round[];
+  players: Player[];
+  nameOf: (id: string) => string;
+  colorOf: (id: string) => string;
 }) {
-  const unit = mode === "match" ? "match" : "win";
+  const [a, setA] = useState(players[0]?.id || "");
+  const [b, setB] = useState(players[1]?.id || "");
+
+  if (players.length < 2) return null;
+  const valid = a && b && a !== b;
+  const h2h = valid ? headToHead(rounds, a, b) : null;
+
   return (
-    <div className={`flex flex-col ${right ? "items-end text-right" : "items-start"}`}>
-      <div
-        className={`flex h-12 w-12 items-center justify-center rounded-full text-lg font-bold ${
-          highlight ? "bg-fairway-600 text-white" : "bg-fairway-100 text-fairway-700"
-        }`}
-      >
-        {name.slice(0, 1).toUpperCase()}
+    <div className="rounded-2xl border border-fairway-200 bg-white p-5 shadow-sm">
+      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-fairway-500">Head-to-head</h2>
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <select value={a} onChange={(e) => setA(e.target.value)} className="rounded-lg border border-fairway-200 px-3 py-2 text-sm">
+          {players.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
+        </select>
+        <span className="text-sm font-semibold text-fairway-400">vs</span>
+        <select value={b} onChange={(e) => setB(e.target.value)} className="rounded-lg border border-fairway-200 px-3 py-2 text-sm">
+          {players.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
+        </select>
       </div>
-      <span className="mt-1 max-w-[10rem] truncate font-semibold">{name}</span>
-      <span className="text-xs text-fairway-500">
-        {wins} {wins === 1 ? unit : `${unit}s`}
-      </span>
-    </div>
-  );
-}
-
-function WinDot() {
-  return <span className="ml-1 inline-block h-2 w-2 rounded-full bg-fairway-500 align-middle" />;
-}
-
-function EmptyState() {
-  return (
-    <div className="rounded-2xl border border-dashed border-fairway-300 bg-white/60 p-10 text-center">
-      <div className="text-4xl">⛳️</div>
-      <p className="mt-2 font-semibold text-fairway-700">No rounds yet</p>
-      <p className="text-sm text-fairway-500">
-        Head to the <strong>Play</strong> tab to record your first round.
-      </p>
+      {!valid ? (
+        <p className="mt-3 text-center text-sm text-fairway-500">Pick two different players.</p>
+      ) : h2h!.shared === 0 ? (
+        <p className="mt-3 text-center text-sm text-fairway-500">No completed rounds together yet.</p>
+      ) : (
+        <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+          <div className="text-right">
+            <div className="font-semibold" style={{ color: colorOf(a) }}>{nameOf(a)}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-black text-fairway-700">{h2h!.aWins}<span className="mx-1 text-fairway-300">–</span>{h2h!.bWins}</div>
+            {h2h!.ties > 0 && <div className="text-xs text-fairway-500">{h2h!.ties} tied</div>}
+            <div className="text-xs text-fairway-400">{h2h!.shared} rounds together</div>
+          </div>
+          <div className="text-left">
+            <div className="font-semibold" style={{ color: colorOf(b) }}>{nameOf(b)}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

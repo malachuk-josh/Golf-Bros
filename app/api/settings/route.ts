@@ -11,9 +11,9 @@ export async function GET() {
 
 export async function PUT(req: Request) {
   const body = (await req.json()) as Settings;
-  if (!body || !body.players) {
+  if (!body || typeof body.seasonName !== "string") {
     return NextResponse.json({ error: "Invalid settings" }, { status: 400 });
   }
-  const saved = await saveSettings(body);
+  const saved = await saveSettings({ seasonName: body.seasonName });
   return NextResponse.json({ settings: saved });
 }

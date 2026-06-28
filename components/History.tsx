@@ -1,25 +1,26 @@
 "use client";
 
-import type { Round, Settings } from "@/lib/types";
-import { PLAYER_IDS, formatToPar, roundTotals } from "@/lib/golf";
+import type { Player, Round } from "@/lib/types";
+import { formatToPar, roundPlayers, roundTotals } from "@/lib/golf";
 
 export default function History({
   rounds,
-  settings,
+  players,
   onOpen,
 }: {
   rounds: Round[];
-  settings: Settings;
+  players: Player[];
   onOpen: (round: Round) => void;
 }) {
+  const nameOf = (id: string) => players.find((p) => p.id === id)?.name || "Player";
+  const colorOf = (id: string) => players.find((p) => p.id === id)?.color || "#475569";
+
   if (rounds.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-fairway-300 bg-white/60 p-10 text-center">
         <div className="text-4xl">🗓️</div>
         <p className="mt-2 font-semibold text-fairway-700">No saved rounds</p>
-        <p className="text-sm text-fairway-500">
-          Your scorecard history will appear here once you save a round.
-        </p>
+        <p className="text-sm text-fairway-500">Your season's rounds will appear here once you save one.</p>
       </div>
     );
   }
@@ -28,64 +29,55 @@ export default function History({
     <div className="space-y-3">
       {rounds.map((round) => {
         const t = roundTotals(round);
-        const dateStr = new Date(round.date + "T00:00:00").toLocaleDateString(
-          undefined,
-          { weekday: "short", month: "short", day: "numeric", year: "numeric" }
-        );
+        const ids = roundPlayers(round);
+        const dateStr = new Date(round.date + "T00:00:00").toLocaleDateString(undefined, {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
         return (
           <button
             key={round.id}
             onClick={() => onOpen(round)}
-            className="flex w-full items-center gap-4 rounded-xl border border-fairway-200 bg-white p-4 text-left shadow-sm transition hover:border-fairway-400 hover:shadow"
+            className="block w-full rounded-xl border border-fairway-200 bg-white p-4 text-left shadow-sm transition hover:border-fairway-400 hover:shadow"
           >
-            <div className="flex min-w-0 flex-1 flex-col">
-              <span className="font-semibold text-fairway-900">
-                {round.course || "Untitled course"}
-              </span>
-              <span className="text-xs text-fairway-500">
-                {dateStr} · {round.holeCount} holes
-                {round.holeCount === 9 && round.nine ? ` (${round.nine})` : ""}
-              </span>
-              {t.complete && (
-                <div className="mt-1 flex flex-wrap gap-1.5">
-                  {t.match.leader && t.match.leader !== "tie" && (
-                    <span className="rounded bg-fairway-100 px-1.5 py-0.5 text-[10px] font-semibold text-fairway-700">
-                      Match: {settings.players[t.match.leader].split(" ")[0]} {t.match.label}
-                    </span>
-                  )}
-                  {t.netWinner && t.netWinner !== "tie" && t.netWinner !== t.winner && (
-                    <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
-                      Net: {settings.players[t.netWinner].split(" ")[0]}
-                    </span>
-                  )}
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <span className="font-semibold text-fairway-900">{round.course || "Untitled course"}</span>
+                <div className="text-xs text-fairway-500">
+                  {dateStr} · {round.holeCount} holes
+                  {round.holeCount === 9 && round.nine && round.nine !== "single" ? ` (${round.nine})` : ""}
+                  {" · "}{ids.length} players
                 </div>
-              )}
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                {!t.complete && <Chip className="bg-fairway-100 text-fairway-500">In progress</Chip>}
+                {t.complete && t.winner === "tie" && <Chip className="bg-amber-100 text-amber-700">Tie</Chip>}
+                {t.complete && t.winner && t.winner !== "tie" && (
+                  <Chip className="bg-fairway-600 text-white">{nameOf(t.winner).split(" ")[0]} ✓</Chip>
+                )}
+                {t.match && t.match.leader && t.match.leader !== "tie" && t.complete && (
+                  <Chip className="bg-fairway-100 text-fairway-700">{t.match.label}</Chip>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-4">
-              {PLAYER_IDS.map((pid) => {
-                const pt = t.byPlayer[pid];
-                const won = t.winner === pid;
-                return (
-                  <div key={pid} className="text-right">
-                    <div className="text-[11px] font-medium text-fairway-500">
-                      {settings.players[pid]}
-                    </div>
-                    <div
-                      className={`text-lg font-bold ${
-                        won ? "text-fairway-700" : "text-fairway-900/70"
-                      }`}
-                    >
-                      {pt.strokes || "–"}
-                      {pt.holesPlayed > 0 && (
-                        <span className="ml-1 text-xs font-medium text-fairway-400">
-                          {formatToPar(pt.toPar)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-              <Badge winner={t.winner} a={settings.players.p1} b={settings.players.p2} />
+
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+              {ids
+                .map((id) => ({ id, pt: t.byPlayer[id] }))
+                .sort((a, b) => (a.pt?.strokes || 0) - (b.pt?.strokes || 0))
+                .map(({ id, pt }) => {
+                  const won = t.winner === id;
+                  return (
+                    <span key={id} className="inline-flex items-baseline gap-1.5 text-sm">
+                      <span className="inline-block h-2 w-2 translate-y-[-1px] rounded-full" style={{ background: colorOf(id) }} />
+                      <span className="text-fairway-600">{nameOf(id)}</span>
+                      <span className={`font-bold ${won ? "text-fairway-700" : "text-fairway-900/70"}`}>{pt?.strokes || "–"}</span>
+                      {pt?.holesPlayed ? <span className="text-xs text-fairway-400">{formatToPar(pt.toPar)}</span> : null}
+                    </span>
+                  );
+                })}
             </div>
           </button>
         );
@@ -94,30 +86,6 @@ export default function History({
   );
 }
 
-function Badge({
-  winner,
-  a,
-  b,
-}: {
-  winner: "p1" | "p2" | "tie" | null;
-  a: string;
-  b: string;
-}) {
-  if (winner === null)
-    return (
-      <span className="rounded-full bg-fairway-100 px-2.5 py-1 text-xs font-medium text-fairway-500">
-        In progress
-      </span>
-    );
-  if (winner === "tie")
-    return (
-      <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">
-        Tie
-      </span>
-    );
-  return (
-    <span className="rounded-full bg-fairway-600 px-2.5 py-1 text-xs font-semibold text-white">
-      {(winner === "p1" ? a : b).split(" ")[0]} ✓
-    </span>
-  );
+function Chip({ children, className }: { children: React.ReactNode; className: string }) {
+  return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${className}`}>{children}</span>;
 }

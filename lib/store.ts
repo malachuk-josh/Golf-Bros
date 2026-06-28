@@ -1,5 +1,5 @@
 import { Redis } from "@upstash/redis";
-import type { CourseTemplate, Round, Settings } from "./types";
+import type { CourseTemplate, Player, Round, Settings } from "./types";
 import { DEFAULT_SETTINGS } from "./golf";
 
 /**
@@ -17,6 +17,7 @@ import { DEFAULT_SETTINGS } from "./golf";
 const ROUNDS_KEY = "golf:rounds";
 const SETTINGS_KEY = "golf:settings";
 const COURSES_KEY = "golf:courses";
+const PLAYERS_KEY = "golf:players";
 
 function getRedis(): Redis | null {
   const url =
@@ -51,19 +52,22 @@ const DATA_DIR = process.env.VERCEL
 const ROUNDS_FILE = path.join(DATA_DIR, "rounds.json");
 const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
 const COURSES_FILE = path.join(DATA_DIR, "courses.json");
+const PLAYERS_FILE = path.join(DATA_DIR, "players.json");
 
 // Last-resort in-memory cache so the app never crashes when neither Upstash nor
 // a writable filesystem is available. This is per-instance and ephemeral — it's
 // only here to keep the UI working until an Upstash store is attached.
-const mem: { rounds: unknown; settings: unknown; courses: unknown } = {
-  rounds: undefined,
-  settings: undefined,
-  courses: undefined,
-};
+const mem: {
+  rounds: unknown;
+  settings: unknown;
+  courses: unknown;
+  players: unknown;
+} = { rounds: undefined, settings: undefined, courses: undefined, players: undefined };
 
-function memKey(file: string): "rounds" | "settings" | "courses" {
+function memKey(file: string): "rounds" | "settings" | "courses" | "players" {
   if (file === ROUNDS_FILE) return "rounds";
   if (file === COURSES_FILE) return "courses";
+  if (file === PLAYERS_FILE) return "players";
   return "settings";
 }
 
@@ -196,4 +200,42 @@ export async function upsertCourse(course: CourseTemplate): Promise<CourseTempla
 export async function deleteCourse(id: string): Promise<void> {
   const courses = await getCourses();
   await persistCourses(courses.filter((c) => c.id !== id));
+}
+
+// ---------------------------------------------------------------------------
+// Players
+// ---------------------------------------------------------------------------
+
+export async function getPlayers(): Promise<Player[]> {
+  const redis = getRedis();
+  let players: Player[];
+  if (redis) {
+    players = (await redis.get<Player[]>(PLAYERS_KEY)) || [];
+  } else {
+    players = await readLocal<Player[]>(PLAYERS_FILE, []);
+  }
+  return players.sort((a, b) => a.createdAt - b.createdAt);
+}
+
+async function persistPlayers(players: Player[]): Promise<void> {
+  const redis = getRedis();
+  if (redis) {
+    await redis.set(PLAYERS_KEY, players);
+  } else {
+    await writeLocal(PLAYERS_FILE, players);
+  }
+}
+
+export async function upsertPlayer(player: Player): Promise<Player> {
+  const players = await getPlayers();
+  const idx = players.findIndex((p) => p.id === player.id);
+  if (idx >= 0) players[idx] = player;
+  else players.push(player);
+  await persistPlayers(players);
+  return player;
+}
+
+export async function deletePlayer(id: string): Promise<void> {
+  const players = await getPlayers();
+  await persistPlayers(players.filter((p) => p.id !== id));
 }
