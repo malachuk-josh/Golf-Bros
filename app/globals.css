@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background: linear-gradient(180deg, #f0f9f1 0%, #f7faf7 40%, #ffffff 100%);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* hide number input spinners for a cleaner scorecard */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
