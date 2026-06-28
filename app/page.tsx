@@ -17,7 +17,7 @@ type Tab = "play" | "standings" | "history" | "stats" | "courses" | "settings";
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "play", label: "Play", icon: "⛳️" },
   { id: "standings", label: "Standings", icon: "🏆" },
-  { id: "history", label: "History", icon: "🗓️" },
+  { id: "history", label: "Season", icon: "🗓️" },
   { id: "stats", label: "Stats", icon: "📊" },
   { id: "courses", label: "Courses", icon: "🗺️" },
   { id: "settings", label: "Settings", icon: "⚙️" },
