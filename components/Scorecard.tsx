@@ -142,7 +142,7 @@ export default function Scorecard({
               </th>
               {holes.map((h) => (
                 <th key={h.hole} className="px-1 py-2 font-semibold">
-                  {offset + h.hole}
+                  {h.hole}
                 </th>
               ))}
               <th className="px-2 py-2 font-semibold">{label === "Back 9" ? "IN" : isNine ? "TOT" : "OUT"}</th>
@@ -158,7 +158,7 @@ export default function Scorecard({
                     value={h.par}
                     onChange={(e) => setPar(offset + i, e.target.value)}
                     className="w-9 rounded border border-fairway-200 bg-white py-0.5 text-center text-xs"
-                    aria-label={`Par for hole ${offset + h.hole}`}
+                    aria-label={`Par for hole ${h.hole}`}
                   />
                 </td>
               ))}
@@ -191,7 +191,7 @@ export default function Scorecard({
                             val,
                             h.par
                           )}`}
-                          aria-label={`${settings.players[pid]} strokes on hole ${offset + h.hole}`}
+                          aria-label={`${settings.players[pid]} strokes on hole ${h.hole}`}
                         />
                       </td>
                     );
