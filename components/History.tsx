@@ -46,6 +46,20 @@ export default function History({
                 {dateStr} · {round.holeCount} holes
                 {round.holeCount === 9 && round.nine ? ` (${round.nine})` : ""}
               </span>
+              {t.complete && (
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {t.match.leader && t.match.leader !== "tie" && (
+                    <span className="rounded bg-fairway-100 px-1.5 py-0.5 text-[10px] font-semibold text-fairway-700">
+                      Match: {settings.players[t.match.leader].split(" ")[0]} {t.match.label}
+                    </span>
+                  )}
+                  {t.netWinner && t.netWinner !== "tie" && t.netWinner !== t.winner && (
+                    <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                      Net: {settings.players[t.netWinner].split(" ")[0]}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-4">
               {PLAYER_IDS.map((pid) => {

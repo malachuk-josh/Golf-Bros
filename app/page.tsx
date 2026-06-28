@@ -25,6 +25,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
 function App() {
   const {
     rounds,
+    courses,
     settings,
     backend,
     loading,
@@ -32,10 +33,12 @@ function App() {
     saveRound,
     deleteRound,
     saveSettings,
+    saveCourse,
   } = useGolfData();
   const [tab, setTab] = useState<Tab>("play");
   const [editing, setEditing] = useState<Round | null>(null);
   const [draftKey, setDraftKey] = useState(0);
+  const [undo, setUndo] = useState<Round | null>(null);
 
   function openRound(r: Round) {
     setEditing(r);
@@ -46,6 +49,25 @@ function App() {
   function newCard() {
     setEditing(null);
     setDraftKey((k) => k + 1);
+  }
+
+  // Delete with an undo window: remove now, but stash the round so the user can
+  // restore it from a toast for a few seconds.
+  async function handleDelete(id: string) {
+    const removed = rounds.find((r) => r.id === id) || null;
+    await deleteRound(id);
+    if (removed) {
+      setUndo(removed);
+      setTimeout(() => {
+        setUndo((cur) => (cur && cur.id === removed.id ? null : cur));
+      }, 6000);
+    }
+  }
+
+  async function restoreUndo() {
+    if (!undo) return;
+    await saveRound(undo);
+    setUndo(null);
   }
 
   return (
@@ -107,13 +129,15 @@ function App() {
               </div>
               <Scorecard
                 key={draftKey}
-                initialRound={editing || newRound(18)}
+                initialRound={editing || newRound(18, settings.handicaps)}
                 settings={settings}
+                courses={courses}
                 onSave={async (r) => {
                   await saveRound(r);
                   setEditing(r);
                 }}
-                onDelete={deleteRound}
+                onSaveCourse={saveCourse}
+                onDelete={handleDelete}
                 onClose={editing ? () => { setEditing(null); setTab("history"); } : undefined}
               />
             </div>
@@ -132,6 +156,22 @@ function App() {
             />
           )}
         </main>
+      )}
+
+      {/* Undo toast for deletes */}
+      {undo && (
+        <div className="fixed inset-x-0 bottom-4 z-50 mx-auto flex w-[calc(100%-2rem)] max-w-md items-center justify-between gap-4 rounded-xl border border-fairway-300 bg-fairway-800 px-4 py-3 text-white shadow-xl">
+          <span className="text-sm">
+            Deleted {undo.course || "round"}{" "}
+            <span className="text-fairway-200">({undo.date})</span>
+          </span>
+          <button
+            onClick={restoreUndo}
+            className="rounded-lg bg-white/15 px-3 py-1.5 text-sm font-semibold transition hover:bg-white/25"
+          >
+            Undo
+          </button>
+        </div>
       )}
     </div>
   );

@@ -12,13 +12,17 @@ saved to the cloud.
 
 - **9 or 18 holes** — toggle per round; pick the front or back nine for 9-hole rounds.
 - **Fully adjustable scorecard** — edit par on every hole to match any course, enter strokes per player, with live color-coded birdie/par/bogey feedback.
+- **Handicaps & net scoring** — set a per-player handicap; strokes are allocated by each hole's stroke index (halved for 9-hole rounds) for live net totals and a net winner.
+- **Match play** — automatic holes-won tracking with classic results (e.g. `3&2`, `2 up`, `AS`), live during the round and recorded per round.
+- **Course templates** — save a course's par/stroke-index layout once and reload it for future rounds.
 - **Multiple ways to view scores:**
-  - **Play** — the live scorecard with running totals and "leading" indicator.
-  - **Standings** — season head-to-head record, scoring average vs par, best round, birdie count.
-  - **History** — every saved round with winner badges; tap to re-open and edit.
-  - **Trends** — score-vs-par line chart over the season + a win timeline.
-  - **Stats** — per-player scoring distribution (eagles → doubles) and averages.
-- **Editable players & season name** in Settings.
+  - **Play** — the live scorecard with running totals, net, and a live match-play status.
+  - **Standings** — Gross / Net / Match-play head-to-head, scoring average vs par, best round, birdie count.
+  - **History** — every saved round with winner, match result, and net badges; tap to re-open and edit (with undo on delete).
+  - **Trends** — score-vs-par line chart (completed rounds) + a win timeline.
+  - **Stats** — per-player gross/net/match records and scoring distribution (eagles → doubles).
+- **Consistent stats** — only fully completed rounds count toward season aggregates; in-progress rounds show in History but never skew averages.
+- **Editable players, handicaps & season name** in Settings.
 - **Cloud history via Upstash Redis**, with a transparent local-file fallback for dev.
 
 ## Tech

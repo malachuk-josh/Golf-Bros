@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import type { PlayerId, Round, Settings } from "@/lib/types";
-import { PLAYER_IDS, formatToPar, roundTotals } from "@/lib/golf";
+import { PLAYER_IDS, formatToPar, isComplete, roundTotals } from "@/lib/golf";
 
 const COLORS: Record<PlayerId, string> = { p1: "#247334", p2: "#c2410c" };
 
@@ -13,9 +13,10 @@ export default function Trends({
   rounds: Round[];
   settings: Settings;
 }) {
-  // chronological (oldest -> newest)
+  // chronological (oldest -> newest), completed rounds only so partial rounds
+  // don't distort the chart
   const series = useMemo(() => {
-    const chrono = [...rounds].sort(
+    const chrono = rounds.filter(isComplete).sort(
       (a, b) =>
         new Date(a.date).getTime() - new Date(b.date).getTime() ||
         a.createdAt - b.createdAt
@@ -27,20 +28,25 @@ export default function Trends({
         date: r.date,
         course: r.course,
         toPar: {
-          p1: t.byPlayer.p1.holesPlayed > 0 ? t.byPlayer.p1.toPar : null,
-          p2: t.byPlayer.p2.holesPlayed > 0 ? t.byPlayer.p2.toPar : null,
-        },
+          p1: t.byPlayer.p1.toPar,
+          p2: t.byPlayer.p2.toPar,
+        } as { p1: number | null; p2: number | null },
         winner: t.winner,
       };
     });
   }, [rounds]);
 
-  if (rounds.length < 1) {
+  if (series.length < 1) {
+    const pending = rounds.length > 0;
     return (
       <div className="rounded-2xl border border-dashed border-fairway-300 bg-white/60 p-10 text-center">
         <div className="text-4xl">📈</div>
         <p className="mt-2 font-semibold text-fairway-700">No data to chart yet</p>
-        <p className="text-sm text-fairway-500">Save a couple of rounds to see trends.</p>
+        <p className="text-sm text-fairway-500">
+          {pending
+            ? "Your saved rounds are still in progress. Finish a round (every hole scored for both players) to see trends."
+            : "Save a couple of completed rounds to see trends."}
+        </p>
       </div>
     );
   }

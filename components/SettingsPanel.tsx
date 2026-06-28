@@ -45,23 +45,48 @@ export default function SettingsPanel({
             />
           </div>
           {PLAYER_IDS.map((pid) => (
-            <div key={pid}>
-              <label className="text-xs font-medium text-fairway-600">
-                Player {pid === "p1" ? "1" : "2"} name
-              </label>
-              <input
-                type="text"
-                value={draft.players[pid]}
-                onChange={(e) =>
-                  setDraft({
-                    ...draft,
-                    players: { ...draft.players, [pid]: e.target.value },
-                  })
-                }
-                className="mt-1 w-full rounded-lg border border-fairway-200 px-3 py-2"
-              />
+            <div key={pid} className="grid grid-cols-[1fr_6rem] gap-3">
+              <div>
+                <label className="text-xs font-medium text-fairway-600">
+                  Player {pid === "p1" ? "1" : "2"} name
+                </label>
+                <input
+                  type="text"
+                  value={draft.players[pid]}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      players: { ...draft.players, [pid]: e.target.value },
+                    })
+                  }
+                  className="mt-1 w-full rounded-lg border border-fairway-200 px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-fairway-600">Handicap</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={54}
+                  value={draft.handicaps?.[pid] ?? 0}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      handicaps: {
+                        ...draft.handicaps,
+                        [pid]: Math.max(0, Math.min(54, parseInt(e.target.value, 10) || 0)),
+                      },
+                    })
+                  }
+                  className="mt-1 w-full rounded-lg border border-fairway-200 px-3 py-2 text-center"
+                />
+              </div>
             </div>
           ))}
+          <p className="text-xs text-fairway-500">
+            Handicaps power net scoring — strokes are allocated by each hole&apos;s
+            stroke index (halved for 9-hole rounds). Set to 0 for scratch / gross-only.
+          </p>
         </div>
         <div className="mt-5 flex items-center gap-3">
           <button

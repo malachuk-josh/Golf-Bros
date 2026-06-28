@@ -1,14 +1,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { HoleScore, PlayerId, Round, Settings } from "@/lib/types";
+import type {
+  CourseTemplate,
+  HoleScore,
+  PlayerId,
+  Round,
+  Settings,
+} from "@/lib/types";
 import {
   PLAYER_IDS,
   defaultHoles,
   formatToPar,
   newRound,
   roundTotals,
-  scoreLabel,
 } from "@/lib/golf";
 
 function scoreColor(strokes: number | null | undefined, par: number): string {
@@ -21,10 +26,18 @@ function scoreColor(strokes: number | null | undefined, par: number): string {
   return "bg-red-200 text-red-900"; // double+
 }
 
+function uid(): string {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `c_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
 interface Props {
   initialRound?: Round | null;
   settings: Settings;
+  courses: CourseTemplate[];
   onSave: (round: Round) => Promise<void>;
+  onSaveCourse: (course: CourseTemplate) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
   onClose?: () => void;
 }
@@ -32,18 +45,24 @@ interface Props {
 export default function Scorecard({
   initialRound,
   settings,
+  courses,
   onSave,
+  onSaveCourse,
   onDelete,
   onClose,
 }: Props) {
-  const [draft, setDraft] = useState<Round>(
-    () => initialRound || newRound(18)
-  );
+  const [draft, setDraft] = useState<Round>(() => {
+    const base = initialRound || newRound(18, settings.handicaps);
+    if (!base.handicaps) base.handicaps = { ...settings.handicaps };
+    return base;
+  });
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
   const totals = useMemo(() => roundTotals(draft), [draft]);
   const isNine = draft.holeCount === 9;
+  const anyHandicap =
+    (draft.handicaps?.p1 || 0) > 0 || (draft.handicaps?.p2 || 0) > 0;
 
   function update(mut: (d: Round) => void) {
     setDraft((prev) => {
@@ -58,11 +77,10 @@ export default function Scorecard({
     update((d) => {
       const nine = count === 9 ? (d.nine === "back" ? "back" : "front") : undefined;
       const fresh = defaultHoles(count, nine || "front");
-      // preserve any strokes already entered for overlapping holes
       const merged = fresh.map((h, i) => {
         const old = d.holes[i];
         return old
-          ? { ...h, par: old.par ?? h.par, strokes: { ...h.strokes, ...old.strokes } }
+          ? { ...h, par: old.par ?? h.par, si: old.si ?? h.si, strokes: { ...h.strokes, ...old.strokes } }
           : h;
       });
       d.holeCount = count;
@@ -95,12 +113,34 @@ export default function Scorecard({
     });
   }
 
-  function adjust(holeIdx: number, pid: PlayerId, delta: number) {
+  function applyCourse(courseId: string) {
+    const course = courses.find((c) => c.id === courseId);
+    if (!course) return;
     update((d) => {
-      const cur = d.holes[holeIdx].strokes[pid];
-      const base = typeof cur === "number" && cur > 0 ? cur : d.holes[holeIdx].par;
-      d.holes[holeIdx].strokes[pid] = Math.max(1, Math.min(20, base + delta));
+      d.holeCount = course.holeCount;
+      d.nine = course.holeCount === 9 ? d.nine || "front" : undefined;
+      d.course = course.name;
+      d.holes = course.pars.map((par, i) => ({
+        hole: i + 1,
+        par,
+        si: course.sis[i] ?? i + 1,
+        strokes: { ...(d.holes[i]?.strokes || { p1: null, p2: null }) },
+      }));
     });
+  }
+
+  async function saveAsCourse() {
+    const name = window.prompt("Save this layout as a course. Name:", draft.course || "");
+    if (!name) return;
+    const course: CourseTemplate = {
+      id: uid(),
+      name: name.trim(),
+      holeCount: draft.holeCount,
+      pars: draft.holes.map((h) => h.par),
+      sis: draft.holes.map((h) => h.si),
+      createdAt: Date.now(),
+    };
+    await onSaveCourse(course);
   }
 
   async function handleSave() {
@@ -206,6 +246,15 @@ export default function Scorecard({
     );
   }
 
+  // live match status text
+  const m = totals.match;
+  const anyBoth = m.holesWon.p1 + m.holesWon.p2 + m.halved > 0;
+  let matchText = "";
+  if (anyBoth) {
+    if (m.leader === "tie" || m.margin === 0) matchText = "All square";
+    else if (m.leader) matchText = `${settings.players[m.leader].split(" ")[0]} ${m.label}`;
+  }
+
   return (
     <div className="space-y-4">
       {/* Header controls */}
@@ -273,30 +322,51 @@ export default function Scorecard({
         )}
       </div>
 
+      {/* Course templates */}
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-fairway-200 bg-white px-4 py-3 shadow-sm">
+        <span className="text-xs font-medium text-fairway-600">Course preset:</span>
+        <select
+          value=""
+          onChange={(e) => e.target.value && applyCourse(e.target.value)}
+          className="rounded-lg border border-fairway-200 px-3 py-1.5 text-sm"
+        >
+          <option value="">{courses.length ? "Load a saved course…" : "No saved courses yet"}</option>
+          {courses.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name} ({c.holeCount})
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={saveAsCourse}
+          className="rounded-lg border border-fairway-300 px-3 py-1.5 text-sm font-semibold text-fairway-700 transition hover:bg-fairway-50"
+        >
+          Save current as course
+        </button>
+      </div>
+
       {/* Live totals */}
       <div className="grid grid-cols-2 gap-3">
         {PLAYER_IDS.map((pid) => {
           const t = totals.byPlayer[pid];
-          const leading =
-            totals.winner === pid ||
-            (totals.byPlayer.p1.holesPlayed > 0 &&
-              totals.byPlayer.p2.holesPlayed > 0 &&
-              t.strokes > 0 &&
-              t.strokes ===
-                Math.min(totals.byPlayer.p1.strokes, totals.byPlayer.p2.strokes) &&
-              totals.byPlayer.p1.strokes !== totals.byPlayer.p2.strokes);
+          const leadingGross =
+            totals.byPlayer.p1.holesPlayed > 0 &&
+            totals.byPlayer.p2.holesPlayed > 0 &&
+            t.strokes > 0 &&
+            t.strokes === Math.min(totals.byPlayer.p1.strokes, totals.byPlayer.p2.strokes) &&
+            totals.byPlayer.p1.strokes !== totals.byPlayer.p2.strokes;
           return (
             <div
               key={pid}
               className={`rounded-xl border p-4 shadow-sm ${
-                leading
+                leadingGross
                   ? "border-fairway-400 bg-fairway-50"
                   : "border-fairway-200 bg-white"
               }`}
             >
               <div className="flex items-center justify-between">
                 <span className="font-semibold">{settings.players[pid]}</span>
-                {leading && (
+                {leadingGross && (
                   <span className="rounded-full bg-fairway-600 px-2 py-0.5 text-xs font-semibold text-white">
                     Leading
                   </span>
@@ -306,22 +376,37 @@ export default function Scorecard({
                 <span className="text-3xl font-bold">{t.strokes || "–"}</span>
                 <span className="text-sm text-fairway-600">
                   {t.holesPlayed > 0 ? formatToPar(t.toPar) : ""} · {t.holesPlayed}/
-                  {draft.holes.length} holes
+                  {draft.holes.length}
                 </span>
               </div>
+              {anyHandicap && t.holesPlayed > 0 && (
+                <div className="mt-1 text-xs text-fairway-500">
+                  Net <span className="font-semibold text-fairway-800">{t.net}</span>
+                  {t.strokesReceived > 0 && ` (−${t.strokesReceived} hcp)`}
+                </div>
+              )}
             </div>
           );
         })}
       </div>
 
+      {/* Match status */}
+      {matchText && (
+        <div className="rounded-xl border border-fairway-200 bg-fairway-50 px-4 py-2 text-center text-sm font-semibold text-fairway-700">
+          Match play: {matchText}
+          <span className="ml-2 font-normal text-fairway-500">
+            ({m.holesWon.p1}–{m.holesWon.p2}, {m.halved} halved)
+          </span>
+        </div>
+      )}
+
       {/* Scorecards */}
       {renderNine(front, isNine ? "Scores" : "Front 9", 0)}
       {renderNine(back, "Back 9", 9)}
 
-      {/* Quick +/- entry helper */}
       <p className="text-xs text-fairway-500">
         Tip: type strokes directly, or tap a cell and use arrow keys. Par is
-        editable per hole so you can match any course.
+        editable per hole. {anyHandicap ? "Net scores use each player's handicap from Settings, allocated by stroke index." : "Set handicaps in Settings to enable net scoring."}
       </p>
 
       {/* Notes */}

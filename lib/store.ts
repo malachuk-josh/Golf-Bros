@@ -1,5 +1,5 @@
 import { Redis } from "@upstash/redis";
-import type { Round, Settings } from "./types";
+import type { CourseTemplate, Round, Settings } from "./types";
 import { DEFAULT_SETTINGS } from "./golf";
 
 /**
@@ -16,6 +16,7 @@ import { DEFAULT_SETTINGS } from "./golf";
 
 const ROUNDS_KEY = "golf:rounds";
 const SETTINGS_KEY = "golf:settings";
+const COURSES_KEY = "golf:courses";
 
 function getRedis(): Redis | null {
   const url =
@@ -49,17 +50,21 @@ const DATA_DIR = process.env.VERCEL
   : path.join(process.cwd(), ".data");
 const ROUNDS_FILE = path.join(DATA_DIR, "rounds.json");
 const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
+const COURSES_FILE = path.join(DATA_DIR, "courses.json");
 
 // Last-resort in-memory cache so the app never crashes when neither Upstash nor
 // a writable filesystem is available. This is per-instance and ephemeral — it's
 // only here to keep the UI working until an Upstash store is attached.
-const mem: { rounds: unknown; settings: unknown } = {
+const mem: { rounds: unknown; settings: unknown; courses: unknown } = {
   rounds: undefined,
   settings: undefined,
+  courses: undefined,
 };
 
-function memKey(file: string): "rounds" | "settings" {
-  return file === ROUNDS_FILE ? "rounds" : "settings";
+function memKey(file: string): "rounds" | "settings" | "courses" {
+  if (file === ROUNDS_FILE) return "rounds";
+  if (file === COURSES_FILE) return "courses";
+  return "settings";
 }
 
 async function readLocal<T>(file: string, fallback: T): Promise<T> {
@@ -153,4 +158,42 @@ export async function upsertRound(round: Round): Promise<Round> {
 export async function deleteRound(id: string): Promise<void> {
   const rounds = await getRounds();
   await persistRounds(rounds.filter((r) => r.id !== id));
+}
+
+// ---------------------------------------------------------------------------
+// Course templates
+// ---------------------------------------------------------------------------
+
+export async function getCourses(): Promise<CourseTemplate[]> {
+  const redis = getRedis();
+  let courses: CourseTemplate[];
+  if (redis) {
+    courses = (await redis.get<CourseTemplate[]>(COURSES_KEY)) || [];
+  } else {
+    courses = await readLocal<CourseTemplate[]>(COURSES_FILE, []);
+  }
+  return courses.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+async function persistCourses(courses: CourseTemplate[]): Promise<void> {
+  const redis = getRedis();
+  if (redis) {
+    await redis.set(COURSES_KEY, courses);
+  } else {
+    await writeLocal(COURSES_FILE, courses);
+  }
+}
+
+export async function upsertCourse(course: CourseTemplate): Promise<CourseTemplate> {
+  const courses = await getCourses();
+  const idx = courses.findIndex((c) => c.id === course.id);
+  if (idx >= 0) courses[idx] = course;
+  else courses.push(course);
+  await persistCourses(courses);
+  return course;
+}
+
+export async function deleteCourse(id: string): Promise<void> {
+  const courses = await getCourses();
+  await persistCourses(courses.filter((c) => c.id !== id));
 }

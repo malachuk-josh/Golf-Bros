@@ -37,6 +37,14 @@ export default function StatsView({
 
   return (
     <div className="space-y-5">
+      <p className="text-center text-xs text-fairway-400">
+        Based on {stats.completedRounds} completed{" "}
+        {stats.completedRounds === 1 ? "round" : "rounds"}
+        {stats.completedRounds !== stats.rounds
+          ? ` (${stats.rounds - stats.completedRounds} in progress, not counted)`
+          : ""}
+        .
+      </p>
       <div className="grid gap-4 sm:grid-cols-2">
         {PLAYER_IDS.map((pid) => (
           <PlayerStatCard key={pid} pid={pid} stats={stats} settings={settings} />
@@ -67,15 +75,14 @@ function PlayerStatCard({
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-        <Mini label="Record" value={`${s.wins}-${s.losses}-${s.ties}`} />
-        <Mini
-          label="Avg/hole"
-          value={s.holesPlayed ? s.avgPerHole.toFixed(2) : "—"}
-        />
-        <Mini
-          label="Birdies+"
-          value={String(s.eagles + s.birdies)}
-        />
+        <Mini label="Gross W-L-T" value={`${s.wins}-${s.losses}-${s.ties}`} />
+        <Mini label="Net W-L-T" value={`${s.netWins}-${s.netLosses}-${s.netTies}`} />
+        <Mini label="Match W-L-H" value={`${s.matchWins}-${s.matchLosses}-${s.matchHalved}`} />
+      </div>
+
+      <div className="mt-2 grid grid-cols-2 gap-2 text-center">
+        <Mini label="Avg/hole" value={s.holesPlayed ? s.avgPerHole.toFixed(2) : "—"} />
+        <Mini label="Birdies+" value={String(s.eagles + s.birdies)} />
       </div>
 
       {/* distribution bar */}
