@@ -12,13 +12,12 @@ import CourseManager from "@/components/CourseManager";
 import type { CourseTemplate, Round } from "@/lib/types";
 import { newRound, roundFromCourse } from "@/lib/golf";
 
-type Tab = "play" | "standings" | "history" | "trends" | "stats" | "courses" | "settings";
+type Tab = "play" | "standings" | "history" | "stats" | "courses" | "settings";
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "play", label: "Play", icon: "⛳️" },
   { id: "standings", label: "Standings", icon: "🏆" },
   { id: "history", label: "History", icon: "🗓️" },
-  { id: "trends", label: "Trends", icon: "📈" },
   { id: "stats", label: "Stats", icon: "📊" },
   { id: "courses", label: "Courses", icon: "🗺️" },
   { id: "settings", label: "Settings", icon: "⚙️" },
@@ -162,8 +161,12 @@ function App() {
           {tab === "history" && (
             <History rounds={rounds} settings={settings} onOpen={openRound} />
           )}
-          {tab === "trends" && <Trends rounds={rounds} settings={settings} />}
-          {tab === "stats" && <StatsView rounds={rounds} settings={settings} />}
+          {tab === "stats" && (
+            <div className="space-y-6">
+              <StatsView rounds={rounds} settings={settings} />
+              <Trends rounds={rounds} settings={settings} />
+            </div>
+          )}
           {tab === "courses" && (
             <CourseManager
               courses={courses}
