@@ -39,13 +39,32 @@ export function storageBackend(): "upstash" | "local" {
 // ---------------------------------------------------------------------------
 
 import { promises as fs } from "fs";
+import os from "os";
 import path from "path";
 
-const DATA_DIR = path.join(process.cwd(), ".data");
+// Prefer a project-local folder for dev discoverability, but fall back to the
+// OS temp dir on read-only/serverless filesystems (e.g. Vercel).
+const DATA_DIR = process.env.VERCEL
+  ? path.join(os.tmpdir(), "golf-season-data")
+  : path.join(process.cwd(), ".data");
 const ROUNDS_FILE = path.join(DATA_DIR, "rounds.json");
 const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
 
+// Last-resort in-memory cache so the app never crashes when neither Upstash nor
+// a writable filesystem is available. This is per-instance and ephemeral — it's
+// only here to keep the UI working until an Upstash store is attached.
+const mem: { rounds: unknown; settings: unknown } = {
+  rounds: undefined,
+  settings: undefined,
+};
+
+function memKey(file: string): "rounds" | "settings" {
+  return file === ROUNDS_FILE ? "rounds" : "settings";
+}
+
 async function readLocal<T>(file: string, fallback: T): Promise<T> {
+  const key = memKey(file);
+  if (mem[key] !== undefined) return mem[key] as T;
   try {
     const raw = await fs.readFile(file, "utf8");
     return JSON.parse(raw) as T;
@@ -55,8 +74,13 @@ async function readLocal<T>(file: string, fallback: T): Promise<T> {
 }
 
 async function writeLocal(file: string, value: unknown): Promise<void> {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  await fs.writeFile(file, JSON.stringify(value, null, 2), "utf8");
+  mem[memKey(file)] = value;
+  try {
+    await fs.mkdir(DATA_DIR, { recursive: true });
+    await fs.writeFile(file, JSON.stringify(value, null, 2), "utf8");
+  } catch {
+    // Read-only filesystem — the in-memory cache above keeps things working.
+  }
 }
 
 // ---------------------------------------------------------------------------
