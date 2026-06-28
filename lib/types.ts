@@ -37,9 +37,21 @@ export interface Round {
 export interface CourseTemplate {
   id: string;
   name: string;
+  /** Town / state label, e.g. "Stamford, VT". */
+  town?: string;
+  /** Physical holes on the course (9 or 18). */
   holeCount: 9 | 18;
+  /** Par per physical hole (length === holeCount). */
   pars: number[];
+  /** Stroke index per physical hole (length === holeCount). */
   sis: number[];
+  /** A 9-hole course commonly played as two loops of 18 (back nine = front nine). */
+  playsTwice?: boolean;
+  /** False/undefined = per-hole pars are approximate and worth confirming. */
+  parVerified?: boolean;
+  /** Approximate driving distance in miles (for the roster list). */
+  distanceMi?: number;
+  notes?: string;
   createdAt: number;
 }
 

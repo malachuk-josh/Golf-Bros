@@ -8,10 +8,11 @@ import History from "@/components/History";
 import Trends from "@/components/Trends";
 import StatsView from "@/components/StatsView";
 import SettingsPanel from "@/components/SettingsPanel";
-import type { Round } from "@/lib/types";
-import { newRound } from "@/lib/golf";
+import CourseManager from "@/components/CourseManager";
+import type { CourseTemplate, Round } from "@/lib/types";
+import { newRound, roundFromCourse } from "@/lib/golf";
 
-type Tab = "play" | "standings" | "history" | "trends" | "stats" | "settings";
+type Tab = "play" | "standings" | "history" | "trends" | "stats" | "courses" | "settings";
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "play", label: "Play", icon: "⛳️" },
@@ -19,6 +20,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "history", label: "History", icon: "🗓️" },
   { id: "trends", label: "Trends", icon: "📈" },
   { id: "stats", label: "Stats", icon: "📊" },
+  { id: "courses", label: "Courses", icon: "🗺️" },
   { id: "settings", label: "Settings", icon: "⚙️" },
 ];
 
@@ -34,6 +36,7 @@ function App() {
     deleteRound,
     saveSettings,
     saveCourse,
+    deleteCourse,
   } = useGolfData();
   const [tab, setTab] = useState<Tab>("play");
   const [editing, setEditing] = useState<Round | null>(null);
@@ -48,6 +51,16 @@ function App() {
 
   function newCard() {
     setEditing(null);
+    setDraftKey((k) => k + 1);
+  }
+
+  function playCourse(
+    course: CourseTemplate,
+    target: 9 | 18,
+    nine: "front" | "back"
+  ) {
+    setEditing(roundFromCourse(course, target, nine, settings.handicaps));
+    setTab("play");
     setDraftKey((k) => k + 1);
   }
 
@@ -114,40 +127,51 @@ function App() {
         <div className="py-20 text-center text-fairway-500">Loading…</div>
       ) : (
         <main>
-          {tab === "play" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-fairway-700">
-                  {editing ? "Editing round" : "New round"}
-                </h2>
-                <button
-                  onClick={newCard}
-                  className="rounded-lg border border-fairway-300 px-3 py-1.5 text-sm font-semibold text-fairway-700 transition hover:bg-fairway-50"
-                >
-                  + New round
-                </button>
+          {tab === "play" && (() => {
+            const isExisting = editing ? rounds.some((r) => r.id === editing.id) : false;
+            return (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-semibold text-fairway-700">
+                    {isExisting ? "Editing round" : "New round"}
+                  </h2>
+                  <button
+                    onClick={newCard}
+                    className="rounded-lg border border-fairway-300 px-3 py-1.5 text-sm font-semibold text-fairway-700 transition hover:bg-fairway-50"
+                  >
+                    + New round
+                  </button>
+                </div>
+                <Scorecard
+                  key={draftKey}
+                  initialRound={editing || newRound(18, settings.handicaps)}
+                  settings={settings}
+                  courses={courses}
+                  onSave={async (r) => {
+                    await saveRound(r);
+                    setEditing(r);
+                  }}
+                  onSaveCourse={saveCourse}
+                  onDelete={isExisting ? handleDelete : undefined}
+                  onClose={isExisting ? () => { setEditing(null); setTab("history"); } : undefined}
+                />
               </div>
-              <Scorecard
-                key={draftKey}
-                initialRound={editing || newRound(18, settings.handicaps)}
-                settings={settings}
-                courses={courses}
-                onSave={async (r) => {
-                  await saveRound(r);
-                  setEditing(r);
-                }}
-                onSaveCourse={saveCourse}
-                onDelete={handleDelete}
-                onClose={editing ? () => { setEditing(null); setTab("history"); } : undefined}
-              />
-            </div>
-          )}
+            );
+          })()}
           {tab === "standings" && <Standings rounds={rounds} settings={settings} />}
           {tab === "history" && (
             <History rounds={rounds} settings={settings} onOpen={openRound} />
           )}
           {tab === "trends" && <Trends rounds={rounds} settings={settings} />}
           {tab === "stats" && <StatsView rounds={rounds} settings={settings} />}
+          {tab === "courses" && (
+            <CourseManager
+              courses={courses}
+              onSave={saveCourse}
+              onDelete={deleteCourse}
+              onPlay={playCourse}
+            />
+          )}
           {tab === "settings" && (
             <SettingsPanel
               settings={settings}

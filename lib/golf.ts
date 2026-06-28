@@ -1,4 +1,5 @@
 import type {
+  CourseTemplate,
   MatchResult,
   PlayerId,
   Round,
@@ -359,6 +360,83 @@ export function seasonStats(rounds: Round[]): SeasonStats {
   }
 
   return stats;
+}
+
+/** Total par a course plays to for its default round (18 when it plays twice). */
+export function courseNinePar(course: CourseTemplate): number {
+  return course.pars.slice(0, 9).reduce((a, b) => a + b, 0);
+}
+
+export function courseDefaultPar(course: CourseTemplate): number {
+  if (course.holeCount === 18) return course.pars.reduce((a, b) => a + b, 0);
+  return course.playsTwice ? courseNinePar(course) * 2 : courseNinePar(course);
+}
+
+/** Which target hole counts a course supports playing. */
+export function courseOptions(course: CourseTemplate): (9 | 18)[] {
+  if (course.holeCount === 18) return [18, 9];
+  return course.playsTwice ? [9, 18] : [9];
+}
+
+/**
+ * Build a fresh round from a saved course at the requested hole count.
+ * - 18-hole course → play 18, or the front/back nine.
+ * - 9-hole course → play the nine, or (if it plays twice) two loops of 18 with
+ *   the back nine mirroring the front.
+ */
+export function roundFromCourse(
+  course: CourseTemplate,
+  target: 9 | 18,
+  nine: "front" | "back" = "front",
+  handicaps?: Record<PlayerId, number>
+): Round {
+  const base = newRound(target, handicaps);
+  base.course = course.name;
+
+  type H = { hole: number; par: number; si: number };
+  let holes: H[] = [];
+
+  if (course.holeCount === 18) {
+    if (target === 18) {
+      holes = course.pars.map((par, i) => ({
+        hole: i + 1,
+        par,
+        si: course.sis[i] ?? i + 1,
+      }));
+    } else {
+      const start = nine === "back" ? 9 : 0;
+      holes = course.pars.slice(start, start + 9).map((par, i) => ({
+        hole: start + i + 1,
+        par,
+        si: course.sis[start + i] ?? i + 1,
+      }));
+      base.nine = nine;
+    }
+  } else {
+    // 9-hole course
+    if (target === 9) {
+      holes = course.pars.map((par, i) => ({
+        hole: i + 1,
+        par,
+        si: course.sis[i] ?? i + 1,
+      }));
+      base.nine = "single";
+    } else {
+      // play it twice
+      holes = Array.from({ length: 18 }, (_, i) => ({
+        hole: i + 1,
+        par: course.pars[i % 9],
+        si: course.sis[i % 9] ?? (i % 9) + 1,
+      }));
+    }
+  }
+
+  base.holeCount = target;
+  base.holes = holes.map((h) => ({
+    ...h,
+    strokes: { p1: null as number | null, p2: null as number | null },
+  }));
+  return base;
 }
 
 export function scoreLabel(diff: number): string {
