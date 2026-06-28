@@ -71,6 +71,7 @@ export default function Standings({
               <th className="px-2 py-2 text-center font-semibold">Avg vs par</th>
               <th className="px-2 py-2 text-center font-semibold">Avg/hole</th>
               <th className="px-2 py-2 text-center font-semibold">Best</th>
+              <th className="px-2 py-2 text-center font-semibold">Worst</th>
               <th className="px-2 py-2 text-center font-semibold">Birdies+</th>
             </tr>
           </thead>
@@ -95,7 +96,8 @@ export default function Standings({
                   <td className="px-2 py-2.5 text-center">{s.rounds}</td>
                   <td className="px-2 py-2.5 text-center">{formatToPar(Math.round(s.avgToPar))}</td>
                   <td className="px-2 py-2.5 text-center">{s.avgPerHole.toFixed(2)}</td>
-                  <td className="px-2 py-2.5 text-center">{s.bestRoundToPar !== null ? formatToPar(s.bestRoundToPar) : "—"}</td>
+                  <td className="px-2 py-2.5 text-center">{s.bestRoundToPar !== null ? `${formatToPar(s.bestRoundToPar)} (${s.bestRoundStrokes})` : "—"}</td>
+                  <td className="px-2 py-2.5 text-center text-fairway-500">{s.worstRoundToPar !== null ? `${formatToPar(s.worstRoundToPar)} (${s.worstRoundStrokes})` : "—"}</td>
                   <td className="px-2 py-2.5 text-center">{s.eagles + s.birdies}</td>
                 </tr>
               );

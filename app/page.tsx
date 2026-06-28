@@ -113,9 +113,10 @@ function App() {
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition ${tab === t.id ? "bg-fairway-600 text-white shadow-sm" : "text-fairway-700 hover:bg-fairway-50"}`}
+            aria-current={tab === t.id ? "page" : undefined}
+            className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition ${tab === t.id ? "bg-fairway-100 text-fairway-800 ring-1 ring-inset ring-fairway-200" : "text-fairway-600 hover:bg-fairway-50"}`}
           >
-            <span aria-hidden>{t.icon}</span>
+            <span aria-hidden className="inline-block w-[18px] text-center text-[15px] leading-none">{t.icon}</span>
             <span>{t.label}</span>
           </button>
         ))}
@@ -135,7 +136,9 @@ function App() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h2 className="font-semibold text-fairway-700">{isExisting ? "Editing round" : "New round"}</h2>
-                      <button onClick={newCard} className="rounded-lg border border-fairway-300 px-3 py-1.5 text-sm font-semibold text-fairway-700 transition hover:bg-fairway-50">+ New round</button>
+                      {isExisting && (
+                        <button onClick={newCard} className="rounded-lg border border-fairway-300 px-3 py-1.5 text-sm font-semibold text-fairway-700 transition hover:bg-fairway-50">+ Start fresh round</button>
+                      )}
                     </div>
                     <Scorecard
                       key={draftKey}

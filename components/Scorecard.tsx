@@ -11,6 +11,7 @@ import type {
 import {
   defaultHoles,
   formatToPar,
+  normalizeRound,
   roundTotals,
   uid,
 } from "@/lib/golf";
@@ -44,7 +45,7 @@ export default function Scorecard({
   onDelete,
   onClose,
 }: Props) {
-  const [draft, setDraft] = useState<Round>(() => initialRound);
+  const [draft, setDraft] = useState<Round>(() => normalizeRound(initialRound));
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
@@ -162,7 +163,11 @@ export default function Scorecard({
   async function handleSave() {
     setSaving(true);
     try {
-      await onSave(draft);
+      // give blank-course rounds an identifiable fallback name
+      const fallback = `${draft.holeCount} holes · ${new Date(draft.date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+      const toSave = draft.course.trim() ? draft : { ...draft, course: fallback };
+      if (toSave !== draft) setDraft(toSave);
+      await onSave(toSave);
       setSavedAt(Date.now());
     } finally {
       setSaving(false);
@@ -183,7 +188,8 @@ export default function Scorecard({
   function renderNine(holes: HoleScore[], label: string, offset: number) {
     if (holes.length === 0) return null;
     return (
-      <div className="overflow-x-auto rounded-xl border border-fairway-200 bg-white shadow-sm">
+      <div className="relative">
+        <div className="overflow-x-auto rounded-xl border border-fairway-200 bg-white shadow-sm">
         <table className="w-full border-collapse text-center text-sm">
           <thead>
             <tr className="bg-fairway-700 text-white">
@@ -239,6 +245,9 @@ export default function Scorecard({
             ))}
           </tbody>
         </table>
+        </div>
+        {/* right-edge fade hints that the card scrolls horizontally */}
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-8 rounded-r-xl bg-gradient-to-l from-white/95 to-transparent" />
       </div>
     );
   }
@@ -343,10 +352,14 @@ export default function Scorecard({
                 </span>
                 {leading && <span className="rounded-full bg-fairway-600 px-2 py-0.5 text-xs font-semibold text-white">Lead</span>}
               </div>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-3xl font-bold">{t.strokes || "–"}</span>
-                <span className="text-sm text-fairway-600">{t.holesPlayed > 0 ? formatToPar(t.toPar) : ""} · {t.holesPlayed}/{draft.holes.length}</span>
-              </div>
+              {t.holesPlayed > 0 ? (
+                <div className="mt-1 flex items-baseline gap-2">
+                  <span className="text-3xl font-bold">{t.strokes}</span>
+                  <span className="text-sm text-fairway-600">{formatToPar(t.toPar)} · {t.holesPlayed}/{draft.holes.length}</span>
+                </div>
+              ) : (
+                <div className="mt-2 text-sm font-medium text-fairway-400">Start scoring ↓</div>
+              )}
               {anyHandicap && t.holesPlayed > 0 && (
                 <div className="mt-1 text-xs text-fairway-500">Net <span className="font-semibold text-fairway-800">{t.net}</span>{t.strokesReceived > 0 && ` (−${t.strokesReceived})`}</div>
               )}

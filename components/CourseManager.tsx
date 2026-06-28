@@ -161,7 +161,10 @@ function CourseRow({
           <div className="flex items-center gap-2">
             <span className="font-semibold text-fairway-900">{course.name}</span>
             {!course.parVerified && (
-              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+              <span
+                title="Per-hole pars are estimated to match this course's known total — open Edit to confirm or correct them."
+                className="cursor-help rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700"
+              >
                 approx
               </span>
             )}
@@ -238,6 +241,14 @@ function CourseForm({
     });
   }
 
+  function setSi(i: number, v: string) {
+    setDraft((d) => {
+      const sis = [...d.sis];
+      sis[i] = Math.max(1, Math.min(d.holeCount, parseInt(v, 10) || 1));
+      return { ...d, sis };
+    });
+  }
+
   const total = draft.pars.reduce((a, b) => a + b, 0);
   const valid = draft.name.trim().length > 0;
 
@@ -271,6 +282,23 @@ function CourseForm({
               <td className="px-2 py-1 font-semibold">
                 {draft.pars.slice(start, start + count).reduce((a, b) => a + b, 0)}
               </td>
+            </tr>
+            <tr>
+              <td className="px-2 py-1 text-left text-[11px] font-medium text-fairway-500">Stroke idx</td>
+              {Array.from({ length: count }, (_, i) => (
+                <td key={i} className="px-0.5 py-1">
+                  <input
+                    type="number"
+                    min={1}
+                    max={draft.holeCount}
+                    value={draft.sis[start + i]}
+                    onChange={(e) => setSi(start + i, e.target.value)}
+                    className="w-9 rounded border border-fairway-100 bg-fairway-50/40 py-1 text-center text-xs text-fairway-600"
+                    aria-label={`Stroke index for hole ${start + i + 1}`}
+                  />
+                </td>
+              ))}
+              <td />
             </tr>
           </tbody>
         </table>
@@ -347,6 +375,10 @@ function CourseForm({
         <div className="mt-4 space-y-2">
           {renderParRow(0, Math.min(9, draft.holeCount), draft.holeCount > 9 ? "Front" : "Holes")}
           {draft.holeCount === 18 && renderParRow(9, 9, "Back")}
+          <p className="text-[11px] text-fairway-500">
+            Stroke index ranks hole difficulty (1 = hardest) and decides which holes
+            a player&apos;s handicap strokes fall on for net scoring.
+          </p>
         </div>
 
         <div className="mt-4">

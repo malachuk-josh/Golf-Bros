@@ -113,7 +113,7 @@ export default function Trends({
           )}
           {data.map((d, i) =>
             n <= 12 || i % Math.ceil(n / 12) === 0 ? (
-              <text key={i} x={x(i)} y={H - 14} fontSize="10" fill="#6b7280" textAnchor="middle">{d.date.slice(5)}</text>
+              <text key={i} x={x(i)} y={H - 14} fontSize="10" fill="#6b7280" textAnchor="middle">R{i + 1}</text>
             ) : null
           )}
         </svg>
@@ -122,14 +122,36 @@ export default function Trends({
 
       <div className="rounded-2xl border border-fairway-200 bg-white p-4 shadow-sm">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-fairway-500">Win timeline</h2>
+        <div className="mb-3 flex flex-wrap gap-3 text-xs">
+          {activeIds.map((id) => (
+            <span key={id} className="flex items-center gap-1.5">
+              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: colorOf(id) }} />
+              {nameOf(id)}
+            </span>
+          ))}
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "#f59e0b" }} />
+            Tie
+          </span>
+        </div>
         <div className="flex flex-wrap gap-1.5">
-          {data.map((d) => {
-            const bg = d.winner === "tie" || d.winner === null ? "#f59e0b" : colorOf(d.winner);
-            const label = d.winner === "tie" || d.winner === null ? "Tie" : nameOf(d.winner);
-            return <span key={d.id} title={`${d.date} · ${d.course || "round"} — ${label}`} className="h-6 w-6 rounded" style={{ background: bg }} />;
+          {data.map((d, i) => {
+            const tie = d.winner === "tie" || d.winner === null;
+            const bg = tie ? "#f59e0b" : colorOf(d.winner || "");
+            const label = tie ? "Tie" : nameOf(d.winner || "");
+            return (
+              <span
+                key={d.id}
+                title={`Round ${i + 1} · ${d.date} · ${d.course || "round"} — ${label}`}
+                className="flex h-8 w-8 items-center justify-center rounded text-[10px] font-bold text-white"
+                style={{ background: bg }}
+              >
+                {i + 1}
+              </span>
+            );
           })}
         </div>
-        <p className="mt-2 text-xs text-fairway-400">Oldest → newest, colored by winner. Hover for details.</p>
+        <p className="mt-2 text-xs text-fairway-400">Oldest → newest, numbered by round and colored by winner.</p>
       </div>
     </div>
   );

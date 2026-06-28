@@ -52,6 +52,23 @@ export function roundPlayers(round: Round): PlayerId[] {
   return ["p1", "p2"];
 }
 
+/**
+ * Backfill a round to the current shape so it can be edited safely. Rounds saved
+ * before the multi-player migration have no `playerIds` and may be missing
+ * handicaps, stroke indexes, or per-player stroke keys — this fills those in.
+ */
+export function normalizeRound(round: Round): Round {
+  const ids = roundPlayers(round);
+  const handicaps: Record<PlayerId, number> = { ...(round.handicaps || {}) };
+  for (const id of ids) if (handicaps[id] == null) handicaps[id] = 0;
+  const holes = (round.holes || []).map((h, i) => {
+    const strokes: Record<PlayerId, number | null> = { ...(h.strokes || {}) };
+    for (const id of ids) if (!(id in strokes)) strokes[id] = null;
+    return { ...h, si: h.si ?? i + 1, strokes };
+  });
+  return { ...round, playerIds: ids, handicaps, holes };
+}
+
 export function defaultHoles(
   holeCount: 9 | 18,
   players: PlayerId[],
@@ -261,7 +278,11 @@ export interface PlayerSeasonStat {
   avgToPar: number;
   avgPerHole: number;
   bestRoundToPar: number | null;
+  bestRoundStrokes: number | null;
   bestRoundId: string | null;
+  worstRoundToPar: number | null;
+  worstRoundStrokes: number | null;
+  worstRoundId: string | null;
   eagles: number;
   birdies: number;
   pars: number;
@@ -288,7 +309,11 @@ function emptyStat(playerId: PlayerId): PlayerSeasonStat {
     avgToPar: 0,
     avgPerHole: 0,
     bestRoundToPar: null,
+    bestRoundStrokes: null,
     bestRoundId: null,
+    worstRoundToPar: null,
+    worstRoundStrokes: null,
+    worstRoundId: null,
     eagles: 0,
     birdies: 0,
     pars: 0,
@@ -334,7 +359,13 @@ export function seasonStats(rounds: Round[]): SeasonStats {
       }
       if (ps.bestRoundToPar === null || pt.toPar < ps.bestRoundToPar) {
         ps.bestRoundToPar = pt.toPar;
+        ps.bestRoundStrokes = pt.strokes;
         ps.bestRoundId = round.id;
+      }
+      if (ps.worstRoundToPar === null || pt.toPar > ps.worstRoundToPar) {
+        ps.worstRoundToPar = pt.toPar;
+        ps.worstRoundStrokes = pt.strokes;
+        ps.worstRoundId = round.id;
       }
     }
 
