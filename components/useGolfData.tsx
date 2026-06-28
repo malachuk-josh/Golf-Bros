@@ -56,7 +56,12 @@ export function GolfDataProvider({ children }: { children: React.ReactNode }) {
       const pj = await p.json();
       setRounds(rj.rounds || []);
       setBackend(rj.backend || "unknown");
-      setSettings({ ...DEFAULT_SETTINGS, seasonName: sj.settings?.seasonName ?? DEFAULT_SETTINGS.seasonName });
+      setSettings({
+        ...DEFAULT_SETTINGS,
+        seasonName: sj.settings?.seasonName ?? DEFAULT_SETTINGS.seasonName,
+        defaultHoles: sj.settings?.defaultHoles ?? DEFAULT_SETTINGS.defaultHoles,
+        defaultMode: sj.settings?.defaultMode ?? DEFAULT_SETTINGS.defaultMode,
+      });
       setCourses(cj.courses || []);
       setPlayers(pj.players || []);
     } catch (e: any) {

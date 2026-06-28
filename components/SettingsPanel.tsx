@@ -40,6 +40,37 @@ export default function SettingsPanel({
             className="mt-1 w-full rounded-lg border border-fairway-200 px-3 py-2"
           />
         </div>
+
+        <div className="mt-4 flex flex-wrap gap-6">
+          <div>
+            <label className="block text-xs font-medium text-fairway-600">Default holes for a new round</label>
+            <div className="mt-1 inline-flex overflow-hidden rounded-lg border border-fairway-300">
+              {([9, 18] as const).map((h) => (
+                <button
+                  key={h}
+                  onClick={() => setDraft({ ...draft, defaultHoles: h })}
+                  className={`px-4 py-2 text-sm font-semibold transition ${draft.defaultHoles === h ? "bg-fairway-600 text-white" : "bg-white text-fairway-700 hover:bg-fairway-50"}`}
+                >
+                  {h}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-fairway-600">Default Standings view</label>
+            <div className="mt-1 inline-flex overflow-hidden rounded-lg border border-fairway-300">
+              {(["gross", "net", "match"] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setDraft({ ...draft, defaultMode: m })}
+                  className={`px-3 py-2 text-sm font-semibold capitalize transition ${draft.defaultMode === m ? "bg-fairway-600 text-white" : "bg-white text-fairway-700 hover:bg-fairway-50"}`}
+                >
+                  {m === "match" ? "Match" : m}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
         <div className="mt-5 flex items-center gap-3">
           <button
             onClick={save}

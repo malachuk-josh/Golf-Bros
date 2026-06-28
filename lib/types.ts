@@ -17,6 +17,10 @@ export interface Player {
 
 export interface Settings {
   seasonName: string;
+  /** Hole count pre-selected when starting a new round. */
+  defaultHoles: 9 | 18;
+  /** Scoring view shown first on Standings. */
+  defaultMode: "gross" | "net" | "match";
 }
 
 export interface HoleScore {

@@ -14,6 +14,12 @@ export async function PUT(req: Request) {
   if (!body || typeof body.seasonName !== "string") {
     return NextResponse.json({ error: "Invalid settings" }, { status: 400 });
   }
-  const saved = await saveSettings({ seasonName: body.seasonName });
+  const saved = await saveSettings({
+    seasonName: body.seasonName,
+    defaultHoles: body.defaultHoles === 9 ? 9 : 18,
+    defaultMode: (["gross", "net", "match"] as const).includes(body.defaultMode)
+      ? body.defaultMode
+      : "gross",
+  });
   return NextResponse.json({ settings: saved });
 }

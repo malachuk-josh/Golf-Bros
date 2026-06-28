@@ -10,6 +10,8 @@ import type {
 
 export const DEFAULT_SETTINGS: Settings = {
   seasonName: "Our Golf Season",
+  defaultHoles: 18,
+  defaultMode: "gross",
 };
 
 /** Palette assigned to new players (for avatars + trend lines). */

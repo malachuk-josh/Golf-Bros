@@ -61,7 +61,7 @@ function App() {
   }
 
   function newCard() {
-    setEditing(newRound(18, players));
+    setEditing(newRound(settings.defaultHoles, players));
     setTab("play");
     setDraftKey((k) => k + 1);
   }
@@ -142,7 +142,7 @@ function App() {
                     </div>
                     <Scorecard
                       key={draftKey}
-                      initialRound={editing || newRound(18, players)}
+                      initialRound={editing || newRound(settings.defaultHoles, players)}
                       players={players}
                       courses={courses}
                       onSave={async (r) => {
@@ -157,7 +157,7 @@ function App() {
                 );
               })()
             ))}
-          {tab === "standings" && <Standings rounds={rounds} players={players} />}
+          {tab === "standings" && <Standings rounds={rounds} players={players} defaultMode={settings.defaultMode} />}
           {tab === "history" && <History rounds={rounds} players={players} onOpen={openRound} />}
           {tab === "stats" && (
             <div className="space-y-6">

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import type { Player, Round } from "@/lib/types";
 import { formatToPar, roundPlayers, roundTotals } from "@/lib/golf";
 
@@ -15,6 +16,24 @@ export default function History({
   const nameOf = (id: string) => players.find((p) => p.id === id)?.name || "Player";
   const colorOf = (id: string) => players.find((p) => p.id === id)?.color || "#475569";
 
+  const [playerFilter, setPlayerFilter] = useState("all");
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<"newest" | "oldest">("newest");
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = rounds.filter((r) => {
+      if (playerFilter !== "all" && !roundPlayers(r).includes(playerFilter)) return false;
+      if (q && !(r.course || "").toLowerCase().includes(q)) return false;
+      return true;
+    });
+    list.sort((a, b) => {
+      const d = new Date(a.date).getTime() - new Date(b.date).getTime() || a.createdAt - b.createdAt;
+      return sort === "newest" ? -d : d;
+    });
+    return list;
+  }, [rounds, playerFilter, query, sort]);
+
   if (rounds.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-fairway-300 bg-white/60 p-10 text-center">
@@ -27,7 +46,32 @@ export default function History({
 
   return (
     <div className="space-y-3">
-      {rounds.map((round) => {
+      {/* filter / sort bar */}
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-fairway-200 bg-white px-3 py-2 shadow-sm">
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search course…"
+          className="min-w-[8rem] flex-1 rounded-lg border border-fairway-200 px-3 py-1.5 text-sm"
+        />
+        <select value={playerFilter} onChange={(e) => setPlayerFilter(e.target.value)} className="rounded-lg border border-fairway-200 px-2 py-1.5 text-sm">
+          <option value="all">All players</option>
+          {players.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
+        </select>
+        <select value={sort} onChange={(e) => setSort(e.target.value as "newest" | "oldest")} className="rounded-lg border border-fairway-200 px-2 py-1.5 text-sm">
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+        </select>
+      </div>
+
+      {filtered.length === 0 && (
+        <p className="rounded-xl border border-dashed border-fairway-300 bg-white/60 px-4 py-6 text-center text-sm text-fairway-500">
+          No rounds match these filters.
+        </p>
+      )}
+
+      {filtered.map((round) => {
         const t = roundTotals(round);
         const ids = roundPlayers(round);
         const dateStr = new Date(round.date + "T00:00:00").toLocaleDateString(undefined, {

@@ -9,12 +9,14 @@ type Mode = "gross" | "net" | "match";
 export default function Standings({
   rounds,
   players,
+  defaultMode = "gross",
 }: {
   rounds: Round[];
   players: Player[];
+  defaultMode?: Mode;
 }) {
   const stats = useMemo(() => seasonStats(rounds), [rounds]);
-  const [mode, setMode] = useState<Mode>("gross");
+  const [mode, setMode] = useState<Mode>(defaultMode);
 
   const nameOf = (id: string) => players.find((p) => p.id === id)?.name || "Player";
   const colorOf = (id: string) => players.find((p) => p.id === id)?.color || "#475569";

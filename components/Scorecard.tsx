@@ -15,6 +15,7 @@ import {
   roundTotals,
   uid,
 } from "@/lib/golf";
+import ScrollX from "./ScrollX";
 
 function scoreColor(strokes: number | null | undefined, par: number): string {
   if (typeof strokes !== "number" || strokes <= 0) return "bg-white";
@@ -48,6 +49,8 @@ export default function Scorecard({
   const [draft, setDraft] = useState<Round>(() => normalizeRound(initialRound));
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [loadedCourseId, setLoadedCourseId] = useState("");
+  const [courseSaved, setCourseSaved] = useState(false);
 
   const totals = useMemo(() => roundTotals(draft), [draft]);
   const isNine = draft.holeCount === 9;
@@ -130,6 +133,7 @@ export default function Scorecard({
   function applyCourse(courseId: string) {
     const course = courses.find((c) => c.id === courseId);
     if (!course) return;
+    setLoadedCourseId(courseId);
     update((d) => {
       d.holeCount = course.holeCount;
       d.nine = course.holeCount === 9 ? d.nine || "front" : undefined;
@@ -158,6 +162,9 @@ export default function Scorecard({
       createdAt: Date.now(),
     };
     await onSaveCourse(course);
+    setLoadedCourseId(course.id);
+    setCourseSaved(true);
+    setTimeout(() => setCourseSaved(false), 2500);
   }
 
   async function handleSave() {
@@ -188,8 +195,7 @@ export default function Scorecard({
   function renderNine(holes: HoleScore[], label: string, offset: number) {
     if (holes.length === 0) return null;
     return (
-      <div className="relative">
-        <div className="overflow-x-auto rounded-xl border border-fairway-200 bg-white shadow-sm">
+      <ScrollX className="rounded-xl border border-fairway-200 bg-white shadow-sm">
         <table className="w-full border-collapse text-center text-sm">
           <thead>
             <tr className="bg-fairway-700 text-white">
@@ -245,10 +251,7 @@ export default function Scorecard({
             ))}
           </tbody>
         </table>
-        </div>
-        {/* right-edge fade hints that the card scrolls horizontally */}
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-8 rounded-r-xl bg-gradient-to-l from-white/95 to-transparent" />
-      </div>
+      </ScrollX>
     );
   }
 
@@ -276,7 +279,10 @@ export default function Scorecard({
         </div>
         <div className="flex flex-1 flex-col">
           <label className="text-xs font-medium text-fairway-600">Course</label>
-          <input type="text" value={draft.course} placeholder="e.g. Pebble Beach" onChange={(e) => update((d) => (d.course = e.target.value))} className="min-w-[140px] rounded-lg border border-fairway-200 px-3 py-2" />
+          <input type="text" value={draft.course} placeholder="e.g. Pebble Beach" onChange={(e) => update((d) => (d.course = e.target.value))} className={`min-w-[140px] rounded-lg border px-3 py-2 ${draft.course.trim() ? "border-fairway-200" : "border-amber-300"}`} />
+          {!draft.course.trim() && (
+            <span className="mt-1 text-[11px] text-amber-600">Add a name so this round is easy to find later.</span>
+          )}
         </div>
         <div className="flex flex-col">
           <label className="text-xs font-medium text-fairway-600">Holes</label>
@@ -327,11 +333,12 @@ export default function Scorecard({
       {/* Course templates */}
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-fairway-200 bg-white px-4 py-3 shadow-sm">
         <span className="text-xs font-medium text-fairway-600">Course preset:</span>
-        <select value="" onChange={(e) => e.target.value && applyCourse(e.target.value)} className="rounded-lg border border-fairway-200 px-3 py-1.5 text-sm">
+        <select value={loadedCourseId} onChange={(e) => e.target.value && applyCourse(e.target.value)} className="rounded-lg border border-fairway-200 px-3 py-1.5 text-sm">
           <option value="">{courses.length ? "Load a saved course…" : "No saved courses yet"}</option>
           {courses.map((c) => (<option key={c.id} value={c.id}>{c.name} ({c.holeCount})</option>))}
         </select>
         <button onClick={saveAsCourse} className="rounded-lg border border-fairway-300 px-3 py-1.5 text-sm font-semibold text-fairway-700 transition hover:bg-fairway-50">Save current as course</button>
+        {courseSaved && <span className="text-sm font-medium text-fairway-600">✓ Course saved</span>}
       </div>
 
       {/* Live totals */}
@@ -392,7 +399,7 @@ export default function Scorecard({
       <div className="sticky bottom-0 flex flex-wrap items-center gap-3 rounded-xl border border-fairway-200 bg-white/95 p-3 shadow-lg backdrop-blur">
         <button onClick={handleSave} disabled={saving} className="rounded-lg bg-fairway-600 px-5 py-2.5 font-semibold text-white shadow-sm transition hover:bg-fairway-700 disabled:opacity-60">{saving ? "Saving…" : "Save round"}</button>
         {savedAt && <span className="text-sm font-medium text-fairway-600">✓ Saved to history</span>}
-        {onClose && <button onClick={onClose} className="rounded-lg border border-fairway-300 px-4 py-2.5 font-semibold text-fairway-700 transition hover:bg-fairway-50">Done</button>}
+        {onClose && <button onClick={onClose} className="rounded-lg border border-fairway-300 px-4 py-2.5 font-semibold text-fairway-700 transition hover:bg-fairway-50">← Back to Season</button>}
         {onDelete && (
           <button
             onClick={async () => {

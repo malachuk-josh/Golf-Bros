@@ -284,7 +284,7 @@ function CourseForm({
               </td>
             </tr>
             <tr>
-              <td className="px-2 py-1 text-left text-[11px] font-medium text-fairway-500">Stroke idx</td>
+              <td className="px-2 py-1 text-left text-xs font-semibold text-fairway-600">Stroke idx</td>
               {Array.from({ length: count }, (_, i) => (
                 <td key={i} className="px-0.5 py-1">
                   <input
@@ -293,7 +293,7 @@ function CourseForm({
                     max={draft.holeCount}
                     value={draft.sis[start + i]}
                     onChange={(e) => setSi(start + i, e.target.value)}
-                    className="w-9 rounded border border-fairway-100 bg-fairway-50/40 py-1 text-center text-xs text-fairway-600"
+                    className="w-9 rounded border border-fairway-200 py-1 text-center text-xs text-fairway-700"
                     aria-label={`Stroke index for hole ${start + i + 1}`}
                   />
                 </td>
@@ -373,6 +373,7 @@ function CourseForm({
         </div>
 
         <div className="mt-4 space-y-2">
+          <div className="text-xs font-semibold uppercase tracking-wide text-fairway-500">Par &amp; stroke index per hole</div>
           {renderParRow(0, Math.min(9, draft.holeCount), draft.holeCount > 9 ? "Front" : "Holes")}
           {draft.holeCount === 18 && renderParRow(9, 9, "Back")}
           <p className="text-[11px] text-fairway-500">
