@@ -1,8 +1,12 @@
 # ⛳️ Golf Season Scorecard
 
+**Live:** https://golf-season.vercel.app
+
 A custom two-player golf scorekeeping app for tracking a whole season. Built
 with Next.js (App Router) and backed by Upstash Redis so every scorecard is
 saved to the cloud.
+
+> Auto-deploys on every push to `main` via the Vercel ↔ GitHub integration.
 
 ## Features
 
