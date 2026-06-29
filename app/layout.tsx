@@ -5,6 +5,12 @@ export const metadata: Metadata = {
   title: "SCRATCH // Season Desk",
   description:
     "A golf season scoring desk — rounds, handicaps, net, match play, and standings.",
+  applicationName: "SCRATCH",
+  appleWebApp: {
+    capable: true,
+    title: "SCRATCH",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export const viewport: Viewport = {

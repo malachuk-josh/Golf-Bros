@@ -1,0 +1,37 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SCRATCH golf">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#123A26"/>
+      <stop offset="1" stop-color="#06130D"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="30%" cy="22%" r="85%">
+      <stop offset="0" stop-color="#34D382" stop-opacity="0.5"/>
+      <stop offset="55%" stop-color="#34D382" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="flag" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6EE7A0"/>
+      <stop offset="1" stop-color="#2FBF71"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="112" fill="url(#glow)"/>
+  <rect x="7" y="7" width="498" height="498" rx="105" fill="none" stroke="#A7F3CF" stroke-opacity="0.16" stroke-width="3"/>
+  <!-- ground + cup -->
+  <ellipse cx="256" cy="406" rx="132" ry="28" fill="#0A2417"/>
+  <ellipse cx="262" cy="400" rx="40" ry="12" fill="#04100B"/>
+  <!-- flagstick -->
+  <rect x="250" y="116" width="13" height="286" rx="6.5" fill="#E6F2EA"/>
+  <!-- flag -->
+  <path d="M263 128 L412 170 L263 214 Z" fill="url(#flag)"/>
+  <path d="M263 128 L412 170 L263 150 Z" fill="#BFF5D6" opacity="0.55"/>
+  <!-- golf ball -->
+  <circle cx="196" cy="392" r="26" fill="#EAF6EE"/>
+  <g fill="#0A2417" opacity="0.18">
+    <circle cx="189" cy="385" r="2.7"/>
+    <circle cx="200" cy="385" r="2.7"/>
+    <circle cx="194" cy="393" r="2.7"/>
+    <circle cx="205" cy="393" r="2.7"/>
+    <circle cx="188" cy="397" r="2.7"/>
+    <circle cx="199" cy="400" r="2.7"/>
+  </g>
+</svg>
