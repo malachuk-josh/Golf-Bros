@@ -224,16 +224,24 @@ export default function Scorecard({
           <label className="eyebrow mb-1">Date</label>
           <input type="date" value={draft.date} onChange={(e) => update((d) => (d.date = e.target.value))} className={ctrl} />
         </div>
-        <div className="flex flex-1 flex-col">
-          <label className="eyebrow mb-1">Course</label>
+        <div className="flex min-w-[200px] flex-1 flex-col">
+          <label className="eyebrow mb-1">Course — type or load a preset</label>
           <input
             type="text"
             value={draft.course}
             placeholder="e.g. Pebble Beach"
             onChange={(e) => update((d) => (d.course = e.target.value))}
-            className={`min-w-[140px] rounded-lg border bg-panel2 px-3 py-2 text-ink ${draft.course.trim() ? "border-line" : "border-down/50"}`}
+            className={`rounded-lg border bg-panel2 px-3 py-2 text-ink ${draft.course.trim() ? "border-line" : "border-down/50"}`}
           />
-          {!draft.course.trim() && <span className="mt-1 text-[11px] text-down">Add a name so this round is easy to find.</span>}
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            <select value={loadedCourseId} onChange={(e) => e.target.value && applyCourse(e.target.value)} className="flex-1 rounded-lg border border-line bg-panel2 px-2.5 py-1.5 text-sm text-ink">
+              <option value="">{courses.length ? "Load saved course…" : "No saved courses"}</option>
+              {courses.map((c) => (<option key={c.id} value={c.id}>{c.name} ({c.holeCount})</option>))}
+            </select>
+            <button onClick={saveAsCourse} className="rounded-lg border border-line px-2.5 py-1.5 font-mono text-xs uppercase tracking-eyebrow text-mut transition hover:text-ink">Save course</button>
+            {courseSaved && <span className="font-mono text-xs text-up">✓ saved</span>}
+          </div>
+          {!draft.course.trim() && <span className="mt-1 text-[11px] text-down">Add a name or load a preset so this round is easy to find.</span>}
         </div>
         <div className="flex flex-col">
           <label className="eyebrow mb-1">Holes</label>
@@ -277,21 +285,6 @@ export default function Scorecard({
         </div>
       </Card>
 
-      {/* course preset + view toggle */}
-      <Card className="flex flex-wrap items-center gap-2 px-4 py-3">
-        <span className="eyebrow">preset</span>
-        <select value={loadedCourseId} onChange={(e) => e.target.value && applyCourse(e.target.value)} className="rounded-lg border border-line bg-panel2 px-3 py-1.5 text-sm text-ink">
-          <option value="">{courses.length ? "Load saved course…" : "No saved courses"}</option>
-          {courses.map((c) => (<option key={c.id} value={c.id}>{c.name} ({c.holeCount})</option>))}
-        </select>
-        <button onClick={saveAsCourse} className="rounded-lg border border-line px-3 py-1.5 font-mono text-xs uppercase tracking-eyebrow text-mut transition hover:text-ink">Save course</button>
-        {courseSaved && <span className="font-mono text-xs text-up">✓ saved</span>}
-        <div className="ml-auto inline-flex overflow-hidden rounded-lg border border-line">
-          <button onClick={() => setView("hole")} className={segBtn(view === "hole")}>Hole</button>
-          <button onClick={() => setView("card")} className={segBtn(view === "card")}>Card</button>
-        </div>
-      </Card>
-
       {/* totals */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {participants.map((id) => {
@@ -329,6 +322,15 @@ export default function Scorecard({
           <span className="font-mono text-sm text-brass">{matchText}</span>
         </div>
       )}
+
+      {/* scoring view toggle */}
+      <div className="flex items-center justify-between">
+        <div className="eyebrow">// scorecard</div>
+        <div className="inline-flex overflow-hidden rounded-lg border border-line">
+          <button onClick={() => setView("hole")} className={segBtn(view === "hole")}>Hole</button>
+          <button onClick={() => setView("card")} className={segBtn(view === "card")}>Card</button>
+        </div>
+      </div>
 
       {/* SCORING — hole view or grid */}
       {view === "hole" ? (
