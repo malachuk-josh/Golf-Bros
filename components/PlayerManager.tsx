@@ -31,7 +31,7 @@ export default function PlayerManager({ players, rounds, onSave, onDelete }: Pro
       </div>
 
       {players.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-line bg-panel p-10 text-center">
+        <div className="rounded-xl border border-dashed glass p-10 text-center">
           <div className="eyebrow">// roster empty</div>
           <p className="mt-2 font-display text-lg font-medium text-ink">No players yet</p>
           <p className="text-sm text-mut">Add yourself and your friends to start tracking.</p>
@@ -41,7 +41,7 @@ export default function PlayerManager({ players, rounds, onSave, onDelete }: Pro
           {players.map((p) => {
             const s = stats.byPlayer[p.id];
             return (
-              <div key={p.id} className="flex items-center gap-3 rounded-xl border border-line bg-panel p-3">
+              <div key={p.id} className="flex items-center gap-3 rounded-xl border glass p-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full font-display text-lg font-bold text-bg" style={{ background: p.color }}>{p.name.slice(0, 1).toUpperCase() || "?"}</div>
                 <div className="min-w-0 flex-1">
                   <div className="font-display font-medium text-ink">{p.name || "Unnamed"}</div>
@@ -65,7 +65,7 @@ function PlayerForm({ initial, existing, onSave, onCancel }: { initial: Player; 
   const field = "mt-1 w-full rounded-lg border border-line bg-panel2 px-3 py-2 text-ink";
 
   return (
-    <div className="rounded-xl border border-line bg-panel p-5">
+    <div className="rounded-xl border glass p-5">
       <div className="eyebrow">// {existing.some((p) => p.id === initial.id) ? "edit player" : "add player"}</div>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div>

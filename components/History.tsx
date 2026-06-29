@@ -36,7 +36,7 @@ export default function History({
 
   if (rounds.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-line bg-panel p-10 text-center">
+      <div className="rounded-xl border border-dashed glass p-10 text-center">
         <div className="eyebrow">// season empty</div>
         <p className="mt-2 font-display text-lg font-medium text-ink">No saved rounds</p>
         <p className="text-sm text-mut">Your season's rounds will appear here once you save one.</p>
@@ -48,7 +48,7 @@ export default function History({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-panel px-3 py-2">
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border glass px-3 py-2">
         <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search course…" className="min-w-[8rem] flex-1 rounded-lg border border-line bg-panel2 px-3 py-1.5 text-sm text-ink" />
         <select value={playerFilter} onChange={(e) => setPlayerFilter(e.target.value)} className={sel}>
           <option value="all">All players</option>
@@ -61,7 +61,7 @@ export default function History({
       </div>
 
       {filtered.length === 0 && (
-        <p className="rounded-xl border border-dashed border-line bg-panel px-4 py-6 text-center text-sm text-mut">No rounds match these filters.</p>
+        <p className="rounded-xl border border-dashed glass px-4 py-6 text-center text-sm text-mut">No rounds match these filters.</p>
       )}
 
       {filtered.map((round) => {
@@ -69,7 +69,7 @@ export default function History({
         const ids = roundPlayers(round);
         const dateStr = new Date(round.date + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
         return (
-          <button key={round.id} onClick={() => onOpen(round)} className="block w-full rounded-xl border border-line bg-panel p-4 text-left transition hover:border-brass2">
+          <button key={round.id} onClick={() => onOpen(round)} className="block w-full rounded-xl border glass p-4 text-left transition hover:border-brass2">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <span className="font-display font-medium text-ink">{round.course || "Untitled course"}</span>

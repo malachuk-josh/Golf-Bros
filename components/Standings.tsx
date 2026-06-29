@@ -45,7 +45,7 @@ export default function Standings({
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-line bg-panel">
+      <div className="overflow-x-auto rounded-xl border glass">
         <table className="w-full font-mono text-sm">
           <thead>
             <tr className="bg-panel2 text-left text-[11px] uppercase tracking-eyebrow text-mut">
@@ -113,7 +113,7 @@ function HeadToHead({
   const sel = "rounded-lg border border-line bg-panel2 px-3 py-2 text-sm text-ink";
 
   return (
-    <div className="rounded-xl border border-line bg-panel p-5">
+    <div className="rounded-xl border glass p-5">
       <div className="eyebrow mb-3">// head-to-head</div>
       <div className="flex flex-wrap items-center justify-center gap-3">
         <select value={a} onChange={(e) => setA(e.target.value)} className={sel}>{players.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}</select>
@@ -141,7 +141,7 @@ function HeadToHead({
 
 function Empty({ icon, title, body }: { icon: string; title: string; body: string }) {
   return (
-    <div className="rounded-xl border border-dashed border-line bg-panel p-10 text-center">
+    <div className="rounded-xl border border-dashed glass p-10 text-center">
       <div className="text-3xl">{icon}</div>
       <p className="mt-2 font-display text-lg font-medium text-ink">{title}</p>
       <p className="text-sm text-mut">{body}</p>

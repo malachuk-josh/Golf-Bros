@@ -38,7 +38,7 @@ export default function Trends({
 
   if (completed.length < 1) {
     return (
-      <div className="rounded-xl border border-dashed border-line bg-panel p-10 text-center">
+      <div className="rounded-xl border border-dashed glass p-10 text-center">
         <div className="eyebrow">// no chart data</div>
         <p className="mt-2 font-display text-lg font-medium text-ink">Nothing to chart yet</p>
         <p className="text-sm text-mut">Finish a round (every hole scored for all players) to see trends.</p>
@@ -71,7 +71,7 @@ export default function Trends({
 
   return (
     <div className="space-y-5">
-      <div className="rounded-xl border border-line bg-panel p-4">
+      <div className="rounded-xl border glass p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div className="eyebrow">// score vs par by round</div>
           <div className="flex flex-wrap gap-3 font-mono text-xs text-mut">
@@ -98,7 +98,7 @@ export default function Trends({
         <p className="mt-1 text-center font-mono text-[11px] text-mut">Lower is better. Below the bright line = under par.</p>
       </div>
 
-      <div className="rounded-xl border border-line bg-panel p-4">
+      <div className="rounded-xl border glass p-4">
         <div className="eyebrow mb-3">// win timeline</div>
         <div className="mb-3 flex flex-wrap gap-3 font-mono text-xs text-mut">
           {activeIds.map((id) => (<span key={id} className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: colorOf(id) }} />{nameOf(id)}</span>))}
@@ -107,7 +107,7 @@ export default function Trends({
         <div className="flex flex-wrap gap-1.5">
           {data.map((d, i) => {
             const tie = d.winner === "tie" || d.winner === null;
-            const bg = tie ? "#E8B45A" : colorOf(d.winner || "");
+            const bg = tie ? "rgb(var(--brass))" : colorOf(d.winner || "");
             const label = tie ? "Tie" : nameOf(d.winner || "");
             return (
               <span key={d.id} title={`Round ${i + 1} · ${d.date} · ${d.course || "round"} — ${label}`} className="flex h-8 w-8 items-center justify-center rounded font-mono text-[10px] font-bold text-bg" style={{ background: bg }}>{i + 1}</span>

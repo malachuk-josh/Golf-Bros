@@ -43,7 +43,7 @@ export default function CourseManager({ courses, onSave, onDelete, onPlay }: Pro
       <p className="font-mono text-[11px] text-mut">{courses.length} {courses.length === 1 ? "course" : "courses"} · tap a course to start a round, or edit pars. <span className="rounded border border-brass2 px-1 text-brass">approx</span> = estimated pars.</p>
 
       {sorted.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-line bg-panel p-10 text-center">
+        <div className="rounded-xl border border-dashed glass p-10 text-center">
           <div className="eyebrow">// no matches</div>
           <p className="mt-2 font-display text-lg font-medium text-ink">No courses match</p>
           <p className="text-sm text-mut">{courses.length === 0 ? "Add your first course to get started." : "Try a different search."}</p>
@@ -68,7 +68,7 @@ function CourseRow({ course, onPlay, onEdit, onDelete }: { course: CourseTemplat
   const parLabel = course.holeCount === 9 && course.playsTwice ? `par ${courseNinePar(course)}/${courseDefaultPar(course)}` : `par ${courseDefaultPar(course)}`;
 
   return (
-    <div className="rounded-xl border border-line bg-panel p-3">
+    <div className="rounded-xl border glass p-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -131,7 +131,7 @@ function CourseForm({ initial, onSave, onCancel }: { initial: CourseTemplate; on
   }
 
   return (
-    <div className="rounded-xl border border-line bg-panel p-5">
+    <div className="rounded-xl border glass p-5">
       <div className="eyebrow">// {initial.name ? "edit course" : "add course"}</div>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div><label className="eyebrow">Course name</label><input type="text" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="e.g. Stamford Valley" className={field} /></div>

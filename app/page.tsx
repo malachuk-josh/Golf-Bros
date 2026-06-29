@@ -128,7 +128,7 @@ function App() {
   return (
     <div className="min-h-screen">
       {/* Sticky terminal header */}
-      <header className="sticky top-0 z-30 border-b border-line bg-panel/95 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b border-[var(--glass-bd)] bg-panel2/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
           <div className="min-w-0">
             <div className="font-display text-lg font-bold tracking-tight text-brass">
@@ -217,7 +217,7 @@ function App() {
       )}
       {moreOpen && (
         <div className="fixed inset-x-0 bottom-[60px] z-40 mx-auto max-w-3xl px-3 pb-2">
-          <div className="overflow-hidden rounded-xl border border-line bg-panel2 shadow-2xl">
+          <div className="glass-2 overflow-hidden rounded-xl shadow-2xl">
             {SECONDARY.map((s) => (
               <button
                 key={s.id}
@@ -232,7 +232,7 @@ function App() {
       )}
 
       {/* Bottom tab bar */}
-      <nav className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-line bg-panel/95 backdrop-blur">
+      <nav className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-[var(--glass-bd)] bg-panel2/75 backdrop-blur-xl">
         <div className="mx-auto flex max-w-3xl items-stretch justify-around">
           {PRIMARY.map((t) => {
             const active = tab === t.id;
@@ -259,7 +259,7 @@ function App() {
       </nav>
 
       {undo && (
-        <div className="fixed inset-x-0 bottom-[72px] z-50 mx-auto flex w-[calc(100%-2rem)] max-w-md items-center justify-between gap-4 rounded-xl border border-line bg-panel2 px-4 py-3 text-ink shadow-2xl">
+        <div className="glass-2 fixed inset-x-0 bottom-[72px] z-50 mx-auto flex w-[calc(100%-2rem)] max-w-md items-center justify-between gap-4 rounded-xl px-4 py-3 text-ink shadow-2xl">
           <span className="text-sm">Deleted {undo.course || "round"} <span className="text-mut">({undo.date})</span></span>
           <button onClick={restoreUndo} className="rounded-lg border border-brass2 px-3 py-1.5 font-mono text-xs uppercase tracking-eyebrow text-brass transition hover:bg-brass/10">Undo</button>
         </div>
@@ -270,7 +270,7 @@ function App() {
 
 function NeedPlayers({ onGo }: { onGo: () => void }) {
   return (
-    <div className="rounded-xl border border-dashed border-line bg-panel p-10 text-center">
+    <div className="rounded-xl border border-dashed glass p-10 text-center">
       <div className="eyebrow">// roster empty</div>
       <p className="mt-2 font-display text-lg font-medium text-ink">Add players to start</p>
       <p className="text-sm text-mut">You need at least one player before scoring a round.</p>

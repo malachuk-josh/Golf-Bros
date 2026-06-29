@@ -201,7 +201,7 @@ export default function Scorecard({
     holes.reduce((a, h) => a + (typeof h.strokes[id] === "number" && (h.strokes[id] as number) > 0 ? (h.strokes[id] as number) : 0), 0);
 
   function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-    return <div className={`rounded-xl border border-line bg-panel ${className}`}>{children}</div>;
+    return <div className={`rounded-xl border glass ${className}`}>{children}</div>;
   }
 
   const ctrl = "rounded-lg border border-line bg-panel2 px-3 py-2 text-ink";
@@ -299,7 +299,7 @@ export default function Scorecard({
           if (!t) return null;
           const leading = t.holesPlayed > 0 && t.strokes === minStrokes && participants.filter((p) => totals.byPlayer[p]?.strokes === minStrokes && (totals.byPlayer[p]?.holesPlayed || 0) > 0).length === 1;
           return (
-            <div key={id} className={`rounded-xl border p-3 ${leading ? "border-brass2 bg-brass/10" : "border-line bg-panel"}`}>
+            <div key={id} className={`rounded-xl border p-3 ${leading ? "border-brass2 bg-brass/10" : "glass"}`}>
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 truncate font-mono text-sm">
                   <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: colorOf(id) }} />
@@ -413,7 +413,7 @@ export default function Scorecard({
       </Card>
 
       {/* actions */}
-      <div className="sticky bottom-[68px] flex flex-wrap items-center gap-3 rounded-xl border border-line bg-panel/95 p-3 backdrop-blur">
+      <div className="glass-2 sticky bottom-[68px] flex flex-wrap items-center gap-3 rounded-xl p-3">
         <button onClick={handleSave} disabled={saving} className="rounded-lg border border-brass2 bg-brass/15 px-5 py-2.5 font-mono text-sm font-medium uppercase tracking-eyebrow text-brass transition hover:bg-brass/25 disabled:opacity-60">{saving ? "Saving…" : "Save round"}</button>
         {savedAt && <span className="font-mono text-xs text-up">✓ saved</span>}
         {onClose && <button onClick={onClose} className="rounded-lg border border-line px-4 py-2.5 font-mono text-xs uppercase tracking-eyebrow text-mut transition hover:text-ink">← Season</button>}
@@ -450,7 +450,7 @@ function GridNine({
 }) {
   if (holes.length === 0) return null;
   return (
-    <ScrollX className="rounded-xl border border-line bg-panel">
+    <ScrollX className="rounded-xl border glass">
       <table className="w-full border-collapse text-center font-mono text-sm">
         <thead>
           <tr className="bg-panel2 text-brass">

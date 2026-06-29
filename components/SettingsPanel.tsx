@@ -31,7 +31,7 @@ export default function SettingsPanel({
 
   return (
     <div className="space-y-5">
-      <div className="rounded-xl border border-line bg-panel p-5">
+      <div className="rounded-xl border glass p-5">
         <div className="eyebrow">// season</div>
         <div className="mt-4">
           <label className="eyebrow">Season name</label>
@@ -56,7 +56,7 @@ export default function SettingsPanel({
         <p className="mt-3 font-mono text-[11px] text-mut">Manage players and handicaps in the Players tab.</p>
       </div>
 
-      <div className="rounded-xl border border-line bg-panel p-5">
+      <div className="rounded-xl border glass p-5">
         <div className="eyebrow">// storage</div>
         <div className="mt-3 flex items-center gap-3">
           <span className={`inline-block h-2.5 w-2.5 rounded-full ${backend === "upstash" ? "bg-up" : "bg-brass"}`} />

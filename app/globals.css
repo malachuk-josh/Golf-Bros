@@ -5,32 +5,42 @@
 @tailwind utilities;
 
 :root {
-  /* SCRATCH — dark "scoring desk" terminal (default) */
-  --bg: 11 15 20;
-  --panel: 19 26 34;
-  --panel2: 26 36 48;
-  --line: 36 49 64;
-  --ink: 232 237 242;
-  --mut: 126 140 160;
-  --brass: 232 180 90;
-  --brass2: 168 123 46;
-  --up: 61 214 140;
-  --down: 242 85 90;
+  /* SCRATCH — golf-green glass terminal (default, dark) */
+  --bg: 4 16 11;
+  --panel: 12 28 20;
+  --panel2: 17 38 27;
+  --line: 31 58 44;
+  --ink: 226 240 232;
+  --mut: 138 170 150;
+  --brass: 52 211 130;
+  --brass2: 34 150 92;
+  --up: 74 222 150;
+  --down: 244 96 102;
+
+  /* glass surfaces */
+  --glass-bg: rgba(140, 230, 180, 0.06);
+  --glass-bg2: rgba(140, 230, 180, 0.1);
+  --glass-bd: rgba(200, 255, 225, 0.1);
+  --glass-blur: blur(16px) saturate(150%);
   color-scheme: dark;
 }
 
 html.daylight {
-  /* optional bright-sun mode */
-  --bg: 244 246 248;
+  /* bright-sun mode */
+  --bg: 234 244 238;
   --panel: 255 255 255;
-  --panel2: 237 241 245;
-  --line: 214 221 228;
-  --ink: 17 25 34;
-  --mut: 90 105 122;
-  --brass: 165 120 40;
-  --brass2: 122 88 30;
-  --up: 26 122 79;
-  --down: 184 64 63;
+  --panel2: 240 247 242;
+  --line: 203 223 212;
+  --ink: 14 34 24;
+  --mut: 80 112 94;
+  --brass: 21 128 77;
+  --brass2: 16 96 58;
+  --up: 21 128 77;
+  --down: 198 58 62;
+
+  --glass-bg: rgba(255, 255, 255, 0.62);
+  --glass-bg2: rgba(255, 255, 255, 0.78);
+  --glass-bd: rgba(16, 40, 28, 0.09);
   color-scheme: light;
 }
 
@@ -41,11 +51,29 @@ body {
 }
 
 body {
-  background: rgb(var(--bg));
+  background:
+    radial-gradient(1100px 600px at 12% -8%, rgba(52, 211, 130, 0.12), transparent 60%),
+    radial-gradient(900px 520px at 115% 4%, rgba(34, 150, 92, 0.14), transparent 55%),
+    rgb(var(--bg));
+  background-attachment: fixed;
   color: rgb(var(--ink));
   min-height: 100vh;
   font-family: Inter, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* frosted-glass surfaces */
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-bd);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+.glass-2 {
+  background: var(--glass-bg2);
+  border: 1px solid var(--glass-bd);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
 }
 
 /* terminal eyebrow label */
@@ -57,7 +85,7 @@ body {
   color: rgb(var(--mut));
 }
 
-/* hide number input spinners for a cleaner scorecard */
+/* hide number input spinners */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -69,7 +97,6 @@ input[type="number"] {
   appearance: textfield;
 }
 
-/* form controls inherit the dark surface */
 input,
 select,
 textarea {
@@ -81,7 +108,6 @@ textarea::placeholder {
   color: rgb(var(--mut));
 }
 
-/* slim dark scrollbars */
 * {
   scrollbar-width: thin;
   scrollbar-color: rgb(var(--line)) transparent;
@@ -95,7 +121,6 @@ textarea::placeholder {
   border-radius: 3px;
 }
 
-/* respect iOS safe areas for the fixed bottom nav */
 .pb-safe {
   padding-bottom: calc(env(safe-area-inset-bottom, 0px));
 }

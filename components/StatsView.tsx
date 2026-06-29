@@ -6,7 +6,7 @@ import { seasonStats } from "@/lib/golf";
 import type { PlayerSeasonStat } from "@/lib/golf";
 
 const DIST: { key: keyof PlayerSeasonStat; label: string; color: string }[] = [
-  { key: "eagles", label: "Eagle+", color: "#E8B45A" },
+  { key: "eagles", label: "Eagle+", color: "#86EFAC" },
   { key: "birdies", label: "Birdie", color: "#3DD68C" },
   { key: "pars", label: "Par", color: "#5AA7E8" },
   { key: "bogeys", label: "Bogey", color: "#D49A3E" },
@@ -25,7 +25,7 @@ export default function StatsView({
 
   if (rounds.length === 0 || withRounds.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-line bg-panel p-10 text-center">
+      <div className="rounded-xl border border-dashed glass p-10 text-center">
         <div className="eyebrow">// no stats</div>
         <p className="mt-2 font-display text-lg font-medium text-ink">Nothing to show yet</p>
         <p className="text-sm text-mut">Record some completed rounds to unlock stats.</p>
@@ -49,7 +49,7 @@ export default function StatsView({
 function PlayerStatCard({ player, s }: { player: Player; s: PlayerSeasonStat }) {
   const totalHoles = s.eagles + s.birdies + s.pars + s.bogeys + s.doublePlus || 1;
   return (
-    <div className="rounded-xl border border-line bg-panel p-5">
+    <div className="rounded-xl border glass p-5">
       <div className="flex items-center justify-between">
         <h3 className="inline-flex items-center gap-2 font-display text-lg font-medium text-ink">
           <span className="inline-block h-3 w-3 rounded-full" style={{ background: player.color }} />{player.name}
