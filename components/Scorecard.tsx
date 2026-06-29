@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Minus, Plus } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Minus, Plus } from "lucide-react";
 import type {
   CourseTemplate,
   HoleScore,
@@ -52,6 +52,7 @@ export default function Scorecard({
   const [courseSaved, setCourseSaved] = useState(false);
   const [view, setView] = useState<"hole" | "card">("hole");
   const [holeIdx, setHoleIdx] = useState(0);
+  const [metaOpen, setMetaOpen] = useState(!isExisting);
 
   const totals = useMemo(() => roundTotals(draft), [draft]);
   const isNine = draft.holeCount === 9;
@@ -218,8 +219,29 @@ export default function Scorecard({
         )}
       </div>
 
-      {/* round meta */}
-      <Card className="flex flex-wrap items-end gap-3 p-4">
+      {/* round meta (collapsible) */}
+      <Card className="p-4">
+        <button
+          type="button"
+          onClick={() => setMetaOpen((o) => !o)}
+          aria-expanded={metaOpen}
+          className="flex w-full items-center justify-between gap-3 text-left"
+        >
+          <div className="min-w-0">
+            <div className="eyebrow">// round setup</div>
+            <div className="mt-0.5 truncate font-display font-medium text-ink">
+              {draft.course || "Untitled round"}
+              <span className="ml-1 font-mono text-xs font-normal text-mut">
+                · {new Date(draft.date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })} · {draft.holeCount} holes
+                {isNine && draft.nine && draft.nine !== "single" ? ` (${draft.nine})` : ""}
+              </span>
+            </div>
+          </div>
+          <ChevronDown size={20} className={`shrink-0 text-mut transition-transform ${metaOpen ? "rotate-180" : ""}`} />
+        </button>
+
+        {metaOpen && (
+        <div className="mt-3 flex flex-wrap items-end gap-3">
         <div className="flex flex-col">
           <label className="eyebrow mb-1">Date</label>
           <input type="date" value={draft.date} onChange={(e) => update((d) => (d.date = e.target.value))} className={ctrl} />
@@ -260,6 +282,8 @@ export default function Scorecard({
               ))}
             </div>
           </div>
+        )}
+        </div>
         )}
       </Card>
 
