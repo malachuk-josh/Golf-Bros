@@ -53,6 +53,7 @@ export default function Scorecard({
   const [view, setView] = useState<"hole" | "card">("hole");
   const [holeIdx, setHoleIdx] = useState(0);
   const [metaOpen, setMetaOpen] = useState(!isExisting);
+  const [playersOpen, setPlayersOpen] = useState(!isExisting);
 
   const totals = useMemo(() => roundTotals(draft), [draft]);
   const isNine = draft.holeCount === 9;
@@ -290,25 +291,43 @@ export default function Scorecard({
         </div>
       </Card>
 
-      {/* players */}
+      {/* players (collapsible) */}
       <Card className="px-4 py-3">
-        <div className="eyebrow mb-2">// players in round</div>
-        <div className="flex flex-wrap gap-2">
-          {players.map((p) => {
-            const on = participants.includes(p.id);
-            return (
-              <button
-                key={p.id}
-                onClick={() => togglePlayer(p.id)}
-                className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-sm transition ${on ? "border-transparent text-bg" : "border-line text-mut hover:text-ink"}`}
-                style={on ? { background: p.color } : undefined}
-              >
-                <span className="inline-block h-2 w-2 rounded-full" style={{ background: on ? "rgb(var(--bg))" : p.color }} />
-                {p.name}
-                {(p.handicap || 0) > 0 ? <span className="opacity-70">· {p.handicap}</span> : null}
-              </button>
-            );
-          })}
+        <div className="min-w-0">
+          <div className="eyebrow">// players in round</div>
+          <div className="mt-0.5 truncate font-mono text-sm text-ink">
+            {participants.map(nameOf).join(" · ") || "none selected"}
+          </div>
+        </div>
+        {playersOpen && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {players.map((p) => {
+              const on = participants.includes(p.id);
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => togglePlayer(p.id)}
+                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-sm transition ${on ? "border-transparent text-bg" : "border-line text-mut hover:text-ink"}`}
+                  style={on ? { background: p.color } : undefined}
+                >
+                  <span className="inline-block h-2 w-2 rounded-full" style={{ background: on ? "rgb(var(--bg))" : p.color }} />
+                  {p.name}
+                  {(p.handicap || 0) > 0 ? <span className="opacity-70">· {p.handicap}</span> : null}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <div className="mt-3 flex justify-end">
+          <button
+            type="button"
+            onClick={() => setPlayersOpen((o) => !o)}
+            aria-expanded={playersOpen}
+            className="flex items-center gap-1 font-mono text-xs uppercase tracking-eyebrow text-mut transition hover:text-ink"
+          >
+            {playersOpen ? "Collapse" : "Edit players"}
+            <ChevronDown size={16} className={`transition-transform ${playersOpen ? "rotate-180" : ""}`} />
+          </button>
         </div>
       </Card>
 
