@@ -1,6 +1,9 @@
 import type { Config } from "tailwindcss";
 
+const withVar = (v: string) => `rgb(var(${v}) / <alpha-value>)`;
+
 const config: Config = {
+  darkMode: "class",
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -8,21 +11,24 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        fairway: {
-          50: "#f0f9f1",
-          100: "#dbf0de",
-          200: "#b9e1bf",
-          300: "#8aca94",
-          400: "#56ac64",
-          500: "#349044",
-          600: "#247334",
-          700: "#1e5b2c",
-          800: "#1b4926",
-          900: "#173c21",
-        },
+        bg: withVar("--bg"),
+        panel: withVar("--panel"),
+        panel2: withVar("--panel2"),
+        line: withVar("--line"),
+        ink: withVar("--ink"),
+        mut: withVar("--mut"),
+        brass: withVar("--brass"),
+        brass2: withVar("--brass2"),
+        up: withVar("--up"),
+        down: withVar("--down"),
       },
       fontFamily: {
-        sans: ["var(--font-system)", "system-ui", "sans-serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        display: ['"Space Grotesk"', "sans-serif"],
+        mono: ['"JetBrains Mono"', "ui-monospace", "monospace"],
+      },
+      letterSpacing: {
+        eyebrow: ".12em",
       },
     },
   },

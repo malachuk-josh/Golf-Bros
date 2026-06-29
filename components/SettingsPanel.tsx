@@ -27,76 +27,40 @@ export default function SettingsPanel({
     }
   }
 
+  const segBtn = (on: boolean) => `px-4 py-2 font-mono text-xs uppercase tracking-eyebrow capitalize transition ${on ? "bg-brass/15 text-brass" : "text-mut hover:text-ink"}`;
+
   return (
     <div className="space-y-5">
-      <div className="rounded-2xl border border-fairway-200 bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-fairway-500">Season</h2>
+      <div className="rounded-xl border border-line bg-panel p-5">
+        <div className="eyebrow">// season</div>
         <div className="mt-4">
-          <label className="text-xs font-medium text-fairway-600">Season name</label>
-          <input
-            type="text"
-            value={draft.seasonName}
-            onChange={(e) => setDraft({ ...draft, seasonName: e.target.value })}
-            className="mt-1 w-full rounded-lg border border-fairway-200 px-3 py-2"
-          />
+          <label className="eyebrow">Season name</label>
+          <input type="text" value={draft.seasonName} onChange={(e) => setDraft({ ...draft, seasonName: e.target.value })} className="mt-1 w-full rounded-lg border border-line bg-panel2 px-3 py-2 text-ink" />
         </div>
 
         <div className="mt-4 flex flex-wrap gap-6">
           <div>
-            <label className="block text-xs font-medium text-fairway-600">Default holes for a new round</label>
-            <div className="mt-1 inline-flex overflow-hidden rounded-lg border border-fairway-300">
-              {([9, 18] as const).map((h) => (
-                <button
-                  key={h}
-                  onClick={() => setDraft({ ...draft, defaultHoles: h })}
-                  className={`px-4 py-2 text-sm font-semibold transition ${draft.defaultHoles === h ? "bg-fairway-600 text-white" : "bg-white text-fairway-700 hover:bg-fairway-50"}`}
-                >
-                  {h}
-                </button>
-              ))}
-            </div>
+            <label className="eyebrow block">Default holes</label>
+            <div className="mt-1 inline-flex overflow-hidden rounded-lg border border-line">{([9, 18] as const).map((h) => (<button key={h} onClick={() => setDraft({ ...draft, defaultHoles: h })} className={segBtn(draft.defaultHoles === h)}>{h}</button>))}</div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-fairway-600">Default Standings view</label>
-            <div className="mt-1 inline-flex overflow-hidden rounded-lg border border-fairway-300">
-              {(["gross", "net", "match"] as const).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setDraft({ ...draft, defaultMode: m })}
-                  className={`px-3 py-2 text-sm font-semibold capitalize transition ${draft.defaultMode === m ? "bg-fairway-600 text-white" : "bg-white text-fairway-700 hover:bg-fairway-50"}`}
-                >
-                  {m === "match" ? "Match" : m}
-                </button>
-              ))}
-            </div>
+            <label className="eyebrow block">Default board view</label>
+            <div className="mt-1 inline-flex overflow-hidden rounded-lg border border-line">{(["gross", "net", "match"] as const).map((m) => (<button key={m} onClick={() => setDraft({ ...draft, defaultMode: m })} className={segBtn(draft.defaultMode === m)}>{m}</button>))}</div>
           </div>
         </div>
+
         <div className="mt-5 flex items-center gap-3">
-          <button
-            onClick={save}
-            disabled={saving}
-            className="rounded-lg bg-fairway-600 px-5 py-2.5 font-semibold text-white transition hover:bg-fairway-700 disabled:opacity-60"
-          >
-            {saving ? "Saving…" : "Save settings"}
-          </button>
-          {saved && <span className="text-sm font-medium text-fairway-600">✓ Saved</span>}
+          <button onClick={save} disabled={saving} className="rounded-lg border border-brass2 bg-brass/15 px-5 py-2.5 font-mono text-sm uppercase tracking-eyebrow text-brass transition hover:bg-brass/25 disabled:opacity-60">{saving ? "Saving…" : "Save settings"}</button>
+          {saved && <span className="font-mono text-xs text-up">✓ saved</span>}
         </div>
-        <p className="mt-3 text-xs text-fairway-500">
-          Manage players and their handicaps in the <strong>Players</strong> tab.
-        </p>
+        <p className="mt-3 font-mono text-[11px] text-mut">Manage players and handicaps in the Players tab.</p>
       </div>
 
-      <div className="rounded-2xl border border-fairway-200 bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-fairway-500">Storage</h2>
+      <div className="rounded-xl border border-line bg-panel p-5">
+        <div className="eyebrow">// storage</div>
         <div className="mt-3 flex items-center gap-3">
-          <span className={`inline-block h-2.5 w-2.5 rounded-full ${backend === "upstash" ? "bg-fairway-500" : "bg-amber-400"}`} />
-          <span className="text-sm font-medium text-fairway-800">
-            {backend === "upstash"
-              ? "Connected to Upstash Redis — your season is saved in the cloud and shared between players."
-              : backend === "local"
-              ? "Local fallback (no Upstash connected). History is not durable until Upstash env vars are set."
-              : "Checking…"}
-          </span>
+          <span className={`inline-block h-2.5 w-2.5 rounded-full ${backend === "upstash" ? "bg-up" : "bg-brass"}`} />
+          <span className="text-sm text-ink">{backend === "upstash" ? "Connected to Upstash Redis — your season is saved in the cloud and shared between players." : backend === "local" ? "Local fallback (no Upstash connected). History is not durable until Upstash env vars are set." : "Checking…"}</span>
         </div>
       </div>
     </div>

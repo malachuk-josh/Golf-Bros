@@ -1,8 +1,36 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
+  /* SCRATCH — dark "scoring desk" terminal (default) */
+  --bg: 11 15 20;
+  --panel: 19 26 34;
+  --panel2: 26 36 48;
+  --line: 36 49 64;
+  --ink: 232 237 242;
+  --mut: 126 140 160;
+  --brass: 232 180 90;
+  --brass2: 168 123 46;
+  --up: 61 214 140;
+  --down: 242 85 90;
+  color-scheme: dark;
+}
+
+html.daylight {
+  /* optional bright-sun mode */
+  --bg: 244 246 248;
+  --panel: 255 255 255;
+  --panel2: 237 241 245;
+  --line: 214 221 228;
+  --ink: 17 25 34;
+  --mut: 90 105 122;
+  --brass: 165 120 40;
+  --brass2: 122 88 30;
+  --up: 26 122 79;
+  --down: 184 64 63;
   color-scheme: light;
 }
 
@@ -13,9 +41,20 @@ body {
 }
 
 body {
-  background: linear-gradient(180deg, #f0f9f1 0%, #f7faf7 40%, #ffffff 100%);
+  background: rgb(var(--bg));
+  color: rgb(var(--ink));
   min-height: 100vh;
+  font-family: Inter, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* terminal eyebrow label */
+.eyebrow {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(var(--mut));
 }
 
 /* hide number input spinners for a cleaner scorecard */
@@ -28,4 +67,35 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
+}
+
+/* form controls inherit the dark surface */
+input,
+select,
+textarea {
+  background: rgb(var(--panel2));
+  color: rgb(var(--ink));
+}
+input::placeholder,
+textarea::placeholder {
+  color: rgb(var(--mut));
+}
+
+/* slim dark scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--line)) transparent;
+}
+*::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgb(var(--line));
+  border-radius: 3px;
+}
+
+/* respect iOS safe areas for the fixed bottom nav */
+.pb-safe {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px));
 }

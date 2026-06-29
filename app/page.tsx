@@ -1,6 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  Flag,
+  Trophy,
+  CalendarDays,
+  LineChart,
+  Users,
+  Map,
+  Settings as SettingsIcon,
+  Sun,
+  Moon,
+  Plus,
+  MoreHorizontal,
+} from "lucide-react";
 import { GolfDataProvider, useGolfData } from "@/components/useGolfData";
 import Scorecard from "@/components/Scorecard";
 import Standings from "@/components/Standings";
@@ -18,18 +31,21 @@ type Tab =
   | "standings"
   | "history"
   | "stats"
-  | "courses"
   | "players"
+  | "courses"
   | "settings";
 
-const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: "play", label: "Play", icon: "⛳️" },
-  { id: "standings", label: "Standings", icon: "🏆" },
-  { id: "history", label: "Season", icon: "🗓️" },
-  { id: "stats", label: "Stats", icon: "📊" },
-  { id: "players", label: "Players", icon: "🧑‍🤝‍🧑" },
-  { id: "courses", label: "Courses", icon: "🗺️" },
-  { id: "settings", label: "Settings", icon: "⚙️" },
+const PRIMARY: { id: Tab; label: string; icon: typeof Flag }[] = [
+  { id: "play", label: "Play", icon: Flag },
+  { id: "standings", label: "Board", icon: Trophy },
+  { id: "history", label: "Season", icon: CalendarDays },
+  { id: "stats", label: "Stats", icon: LineChart },
+];
+
+const SECONDARY: { id: Tab; label: string; icon: typeof Flag }[] = [
+  { id: "players", label: "Players", icon: Users },
+  { id: "courses", label: "Courses", icon: Map },
+  { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
 
 function App() {
@@ -53,22 +69,42 @@ function App() {
   const [editing, setEditing] = useState<Round | null>(null);
   const [draftKey, setDraftKey] = useState(0);
   const [undo, setUndo] = useState<Round | null>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [daylight, setDaylight] = useState(false);
+
+  useEffect(() => {
+    setDaylight(document.documentElement.classList.contains("daylight"));
+  }, []);
+
+  function toggleTheme() {
+    const next = !daylight;
+    setDaylight(next);
+    document.documentElement.classList.toggle("daylight", next);
+    try {
+      localStorage.setItem("scratch-theme", next ? "daylight" : "dark");
+    } catch {}
+  }
+
+  function go(t: Tab) {
+    setTab(t);
+    setMoreOpen(false);
+  }
 
   function openRound(r: Round) {
     setEditing(r);
-    setTab("play");
+    go("play");
     setDraftKey((k) => k + 1);
   }
 
   function newCard() {
     setEditing(newRound(settings.defaultHoles, players));
-    setTab("play");
+    go("play");
     setDraftKey((k) => k + 1);
   }
 
   function playCourse(course: CourseTemplate, target: 9 | 18, nine: "front" | "back") {
     setEditing(roundFromCourse(course, target, nine, players));
-    setTab("play");
+    go("play");
     setDraftKey((k) => k + 1);
   }
 
@@ -87,62 +123,61 @@ function App() {
     setUndo(null);
   }
 
-  const subtitle =
-    players.length > 0
-      ? `${players.map((p) => p.name).slice(0, 3).join(", ")}${players.length > 3 ? ` +${players.length - 3}` : ""} · ${rounds.length} ${rounds.length === 1 ? "round" : "rounds"}`
-      : "Add players to get started";
+  const moreActive = SECONDARY.some((s) => s.id === tab);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-28 pt-6">
-      <header className="mb-5 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-fairway-800">
-            {settings.seasonName || "Golf Season"}
-          </h1>
-          <p className="text-sm text-fairway-500">{subtitle}</p>
+    <div className="min-h-screen">
+      {/* Sticky terminal header */}
+      <header className="sticky top-0 z-30 border-b border-line bg-panel/95 backdrop-blur">
+        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
+          <div className="min-w-0">
+            <div className="font-display text-lg font-bold tracking-tight text-brass">
+              SCRATCH<span className="font-normal text-mut"> // {settings.seasonName || "season desk"}</span>
+            </div>
+            <div className="eyebrow mt-0.5 truncate">
+              {players.length ? `${players.length} players` : "no players"} · {rounds.length} {rounds.length === 1 ? "round" : "rounds"}
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle daylight mode"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-line text-mut transition hover:text-ink"
+            >
+              {daylight ? <Moon size={17} /> : <Sun size={17} />}
+            </button>
+            <button
+              onClick={newCard}
+              className="flex items-center gap-1.5 rounded-lg border border-brass2 px-3 py-2 font-mono text-xs font-medium uppercase tracking-eyebrow text-brass transition hover:bg-brass/10"
+            >
+              <Plus size={15} /> Round
+            </button>
+          </div>
         </div>
-        <div className="text-3xl">⛳️</div>
       </header>
 
       {error && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>
+        <div className="mx-auto max-w-3xl px-4 pt-3">
+          <div className="rounded-lg border border-down/40 bg-down/10 px-4 py-2 text-sm text-down">{error}</div>
+        </div>
       )}
 
-      <nav className="mb-5 flex gap-1 overflow-x-auto rounded-xl border border-fairway-200 bg-white p-1 shadow-sm">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            aria-current={tab === t.id ? "page" : undefined}
-            className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition ${tab === t.id ? "bg-fairway-100 text-fairway-800 ring-1 ring-inset ring-fairway-200" : "text-fairway-600 hover:bg-fairway-50"}`}
-          >
-            <span aria-hidden className="inline-block w-[18px] text-center text-[15px] leading-none">{t.icon}</span>
-            <span>{t.label}</span>
-          </button>
-        ))}
-      </nav>
-
-      {loading ? (
-        <div className="py-20 text-center text-fairway-500">Loading…</div>
-      ) : (
-        <main>
-          {tab === "play" &&
-            (players.length === 0 ? (
-              <NeedPlayers onGo={() => setTab("players")} />
-            ) : (
-              (() => {
-                const isExisting = editing ? rounds.some((r) => r.id === editing.id) : false;
-                return (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h2 className="font-semibold text-fairway-700">{isExisting ? "Editing round" : "New round"}</h2>
-                      {isExisting && (
-                        <button onClick={newCard} className="rounded-lg border border-fairway-300 px-3 py-1.5 text-sm font-semibold text-fairway-700 transition hover:bg-fairway-50">+ Start fresh round</button>
-                      )}
-                    </div>
+      <main className="mx-auto max-w-3xl px-4 pb-28 pt-4">
+        {loading ? (
+          <div className="py-20 text-center font-mono text-sm text-mut">Loading…</div>
+        ) : (
+          <>
+            {tab === "play" &&
+              (players.length === 0 ? (
+                <NeedPlayers onGo={() => go("players")} />
+              ) : (
+                (() => {
+                  const isExisting = editing ? rounds.some((r) => r.id === editing.id) : false;
+                  return (
                     <Scorecard
                       key={draftKey}
                       initialRound={editing || newRound(settings.defaultHoles, players)}
+                      isExisting={isExisting}
                       players={players}
                       courses={courses}
                       onSave={async (r) => {
@@ -150,35 +185,83 @@ function App() {
                         setEditing(r);
                       }}
                       onSaveCourse={saveCourse}
+                      onNew={newCard}
                       onDelete={isExisting ? handleDelete : undefined}
-                      onClose={isExisting ? () => { setEditing(null); setTab("history"); } : undefined}
+                      onClose={isExisting ? () => { setEditing(null); go("history"); } : undefined}
                     />
-                  </div>
-                );
-              })()
+                  );
+                })()
+              ))}
+            {tab === "standings" && <Standings rounds={rounds} players={players} defaultMode={settings.defaultMode} />}
+            {tab === "history" && <History rounds={rounds} players={players} onOpen={openRound} />}
+            {tab === "stats" && (
+              <div className="space-y-6">
+                <StatsView rounds={rounds} players={players} />
+                <Trends rounds={rounds} players={players} />
+              </div>
+            )}
+            {tab === "players" && <PlayerManager players={players} rounds={rounds} onSave={savePlayer} onDelete={deletePlayer} />}
+            {tab === "courses" && <CourseManager courses={courses} onSave={saveCourse} onDelete={deleteCourse} onPlay={playCourse} />}
+            {tab === "settings" && <SettingsPanel settings={settings} backend={backend} onSave={saveSettings} />}
+          </>
+        )}
+      </main>
+
+      {/* More sheet */}
+      {moreOpen && (
+        <button
+          aria-label="Close menu"
+          onClick={() => setMoreOpen(false)}
+          className="fixed inset-0 z-30 bg-black/40"
+        />
+      )}
+      {moreOpen && (
+        <div className="fixed inset-x-0 bottom-[60px] z-40 mx-auto max-w-3xl px-3 pb-2">
+          <div className="overflow-hidden rounded-xl border border-line bg-panel2 shadow-2xl">
+            {SECONDARY.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => go(s.id)}
+                className={`flex w-full items-center gap-3 border-b border-line px-4 py-3 text-left text-sm font-medium last:border-0 ${tab === s.id ? "text-brass" : "text-ink"}`}
+              >
+                <s.icon size={18} /> {s.label}
+              </button>
             ))}
-          {tab === "standings" && <Standings rounds={rounds} players={players} defaultMode={settings.defaultMode} />}
-          {tab === "history" && <History rounds={rounds} players={players} onOpen={openRound} />}
-          {tab === "stats" && (
-            <div className="space-y-6">
-              <StatsView rounds={rounds} players={players} />
-              <Trends rounds={rounds} players={players} />
-            </div>
-          )}
-          {tab === "players" && (
-            <PlayerManager players={players} rounds={rounds} onSave={savePlayer} onDelete={deletePlayer} />
-          )}
-          {tab === "courses" && (
-            <CourseManager courses={courses} onSave={saveCourse} onDelete={deleteCourse} onPlay={playCourse} />
-          )}
-          {tab === "settings" && <SettingsPanel settings={settings} backend={backend} onSave={saveSettings} />}
-        </main>
+          </div>
+        </div>
       )}
 
+      {/* Bottom tab bar */}
+      <nav className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-line bg-panel/95 backdrop-blur">
+        <div className="mx-auto flex max-w-3xl items-stretch justify-around">
+          {PRIMARY.map((t) => {
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => go(t.id)}
+                aria-current={active ? "page" : undefined}
+                className={`flex flex-1 flex-col items-center gap-1 py-2.5 font-mono text-[10px] uppercase tracking-eyebrow transition ${active ? "text-brass" : "text-mut hover:text-ink"}`}
+              >
+                <t.icon size={20} strokeWidth={active ? 2.4 : 1.8} />
+                {t.label}
+              </button>
+            );
+          })}
+          <button
+            onClick={() => setMoreOpen((v) => !v)}
+            className={`flex flex-1 flex-col items-center gap-1 py-2.5 font-mono text-[10px] uppercase tracking-eyebrow transition ${moreActive || moreOpen ? "text-brass" : "text-mut hover:text-ink"}`}
+          >
+            <MoreHorizontal size={20} strokeWidth={moreActive || moreOpen ? 2.4 : 1.8} />
+            More
+          </button>
+        </div>
+      </nav>
+
       {undo && (
-        <div className="fixed inset-x-0 bottom-4 z-50 mx-auto flex w-[calc(100%-2rem)] max-w-md items-center justify-between gap-4 rounded-xl border border-fairway-300 bg-fairway-800 px-4 py-3 text-white shadow-xl">
-          <span className="text-sm">Deleted {undo.course || "round"} <span className="text-fairway-200">({undo.date})</span></span>
-          <button onClick={restoreUndo} className="rounded-lg bg-white/15 px-3 py-1.5 text-sm font-semibold transition hover:bg-white/25">Undo</button>
+        <div className="fixed inset-x-0 bottom-[72px] z-50 mx-auto flex w-[calc(100%-2rem)] max-w-md items-center justify-between gap-4 rounded-xl border border-line bg-panel2 px-4 py-3 text-ink shadow-2xl">
+          <span className="text-sm">Deleted {undo.course || "round"} <span className="text-mut">({undo.date})</span></span>
+          <button onClick={restoreUndo} className="rounded-lg border border-brass2 px-3 py-1.5 font-mono text-xs uppercase tracking-eyebrow text-brass transition hover:bg-brass/10">Undo</button>
         </div>
       )}
     </div>
@@ -187,11 +270,11 @@ function App() {
 
 function NeedPlayers({ onGo }: { onGo: () => void }) {
   return (
-    <div className="rounded-2xl border border-dashed border-fairway-300 bg-white/60 p-10 text-center">
-      <div className="text-4xl">🧑‍🤝‍🧑</div>
-      <p className="mt-2 font-semibold text-fairway-700">Add players first</p>
-      <p className="text-sm text-fairway-500">You need at least one player before scoring a round.</p>
-      <button onClick={onGo} className="mt-4 rounded-lg bg-fairway-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-fairway-700">Go to Players</button>
+    <div className="rounded-xl border border-dashed border-line bg-panel p-10 text-center">
+      <div className="eyebrow">// roster empty</div>
+      <p className="mt-2 font-display text-lg font-medium text-ink">Add players to start</p>
+      <p className="text-sm text-mut">You need at least one player before scoring a round.</p>
+      <button onClick={onGo} className="mt-4 rounded-lg border border-brass2 px-4 py-2 font-mono text-xs uppercase tracking-eyebrow text-brass transition hover:bg-brass/10">Go to players</button>
     </div>
   );
 }

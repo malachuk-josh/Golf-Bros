@@ -14,7 +14,7 @@ export default function History({
   onOpen: (round: Round) => void;
 }) {
   const nameOf = (id: string) => players.find((p) => p.id === id)?.name || "Player";
-  const colorOf = (id: string) => players.find((p) => p.id === id)?.color || "#475569";
+  const colorOf = (id: string) => players.find((p) => p.id === id)?.color || "#7E8CA0";
 
   const [playerFilter, setPlayerFilter] = useState("all");
   const [query, setQuery] = useState("");
@@ -36,92 +36,64 @@ export default function History({
 
   if (rounds.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-fairway-300 bg-white/60 p-10 text-center">
-        <div className="text-4xl">🗓️</div>
-        <p className="mt-2 font-semibold text-fairway-700">No saved rounds</p>
-        <p className="text-sm text-fairway-500">Your season's rounds will appear here once you save one.</p>
+      <div className="rounded-xl border border-dashed border-line bg-panel p-10 text-center">
+        <div className="eyebrow">// season empty</div>
+        <p className="mt-2 font-display text-lg font-medium text-ink">No saved rounds</p>
+        <p className="text-sm text-mut">Your season's rounds will appear here once you save one.</p>
       </div>
     );
   }
 
+  const sel = "rounded-lg border border-line bg-panel2 px-2 py-1.5 text-sm text-ink";
+
   return (
     <div className="space-y-3">
-      {/* filter / sort bar */}
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-fairway-200 bg-white px-3 py-2 shadow-sm">
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search course…"
-          className="min-w-[8rem] flex-1 rounded-lg border border-fairway-200 px-3 py-1.5 text-sm"
-        />
-        <select value={playerFilter} onChange={(e) => setPlayerFilter(e.target.value)} className="rounded-lg border border-fairway-200 px-2 py-1.5 text-sm">
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-panel px-3 py-2">
+        <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search course…" className="min-w-[8rem] flex-1 rounded-lg border border-line bg-panel2 px-3 py-1.5 text-sm text-ink" />
+        <select value={playerFilter} onChange={(e) => setPlayerFilter(e.target.value)} className={sel}>
           <option value="all">All players</option>
           {players.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
         </select>
-        <select value={sort} onChange={(e) => setSort(e.target.value as "newest" | "oldest")} className="rounded-lg border border-fairway-200 px-2 py-1.5 text-sm">
-          <option value="newest">Newest first</option>
-          <option value="oldest">Oldest first</option>
+        <select value={sort} onChange={(e) => setSort(e.target.value as "newest" | "oldest")} className={sel}>
+          <option value="newest">Newest</option>
+          <option value="oldest">Oldest</option>
         </select>
       </div>
 
       {filtered.length === 0 && (
-        <p className="rounded-xl border border-dashed border-fairway-300 bg-white/60 px-4 py-6 text-center text-sm text-fairway-500">
-          No rounds match these filters.
-        </p>
+        <p className="rounded-xl border border-dashed border-line bg-panel px-4 py-6 text-center text-sm text-mut">No rounds match these filters.</p>
       )}
 
       {filtered.map((round) => {
         const t = roundTotals(round);
         const ids = roundPlayers(round);
-        const dateStr = new Date(round.date + "T00:00:00").toLocaleDateString(undefined, {
-          weekday: "short",
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        });
+        const dateStr = new Date(round.date + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
         return (
-          <button
-            key={round.id}
-            onClick={() => onOpen(round)}
-            className="block w-full rounded-xl border border-fairway-200 bg-white p-4 text-left shadow-sm transition hover:border-fairway-400 hover:shadow"
-          >
+          <button key={round.id} onClick={() => onOpen(round)} className="block w-full rounded-xl border border-line bg-panel p-4 text-left transition hover:border-brass2">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <span className="font-semibold text-fairway-900">{round.course || "Untitled course"}</span>
-                <div className="text-xs text-fairway-500">
-                  {dateStr} · {round.holeCount} holes
-                  {round.holeCount === 9 && round.nine && round.nine !== "single" ? ` (${round.nine})` : ""}
-                  {" · "}{ids.length} players
-                </div>
+                <span className="font-display font-medium text-ink">{round.course || "Untitled course"}</span>
+                <div className="eyebrow mt-0.5 normal-case">{dateStr} · {round.holeCount} holes{round.holeCount === 9 && round.nine && round.nine !== "single" ? ` (${round.nine})` : ""} · {ids.length}p</div>
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
-                {!t.complete && <Chip className="bg-fairway-100 text-fairway-500">In progress</Chip>}
-                {t.complete && t.winner === "tie" && <Chip className="bg-amber-100 text-amber-700">Tie</Chip>}
-                {t.complete && t.winner && t.winner !== "tie" && (
-                  <Chip className="bg-fairway-600 text-white">{nameOf(t.winner).split(" ")[0]} ✓</Chip>
-                )}
-                {t.match && t.match.leader && t.match.leader !== "tie" && t.complete && (
-                  <Chip className="bg-fairway-100 text-fairway-700">{t.match.label}</Chip>
-                )}
+                {!t.complete && <Chip className="border-line text-mut">live</Chip>}
+                {t.complete && t.winner === "tie" && <Chip className="border-brass2 text-brass">tie</Chip>}
+                {t.complete && t.winner && t.winner !== "tie" && <Chip className="border-brass2 bg-brass/15 text-brass">{nameOf(t.winner).split(" ")[0]} ✓</Chip>}
+                {t.match && t.match.leader && t.match.leader !== "tie" && t.complete && <Chip className="border-line text-ink">{t.match.label}</Chip>}
               </div>
             </div>
-
-            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-              {ids
-                .map((id) => ({ id, pt: t.byPlayer[id] }))
-                .sort((a, b) => (a.pt?.strokes || 0) - (b.pt?.strokes || 0))
-                .map(({ id, pt }) => {
-                  const won = t.winner === id;
-                  return (
-                    <span key={id} className="inline-flex items-baseline gap-1.5 text-sm">
-                      <span className="inline-block h-2 w-2 translate-y-[-1px] rounded-full" style={{ background: colorOf(id) }} />
-                      <span className="text-fairway-600">{nameOf(id)}</span>
-                      <span className={`font-bold ${won ? "text-fairway-700" : "text-fairway-900/70"}`}>{pt?.strokes || "–"}</span>
-                      {pt?.holesPlayed ? <span className="text-xs text-fairway-400">{formatToPar(pt.toPar)}</span> : null}
-                    </span>
-                  );
-                })}
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 font-mono text-sm">
+              {ids.map((id) => ({ id, pt: t.byPlayer[id] })).sort((a, b) => (a.pt?.strokes || 0) - (b.pt?.strokes || 0)).map(({ id, pt }) => {
+                const won = t.winner === id;
+                return (
+                  <span key={id} className="inline-flex items-baseline gap-1.5">
+                    <span className="inline-block h-2 w-2 translate-y-[-1px] rounded-full" style={{ background: colorOf(id) }} />
+                    <span className="text-mut">{nameOf(id)}</span>
+                    <span className={`font-medium ${won ? "text-brass" : "text-ink"}`}>{pt?.strokes || "–"}</span>
+                    {pt?.holesPlayed ? <span className="text-xs text-mut">{formatToPar(pt.toPar)}</span> : null}
+                  </span>
+                );
+              })}
             </div>
           </button>
         );
@@ -131,5 +103,5 @@ export default function History({
 }
 
 function Chip({ children, className }: { children: React.ReactNode; className: string }) {
-  return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${className}`}>{children}</span>;
+  return <span className={`rounded border px-2 py-0.5 font-mono text-[10px] uppercase tracking-eyebrow ${className}`}>{children}</span>;
 }

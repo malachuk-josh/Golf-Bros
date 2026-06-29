@@ -1,6 +1,6 @@
 {
-  "name": "golf-season",
-  "version": "1.0.0",
+  "name": "scratch-season-desk",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@upstash/redis": "^1.34.3",
+    "lucide-react": "^1.22.0",
     "next": "14.2.35",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

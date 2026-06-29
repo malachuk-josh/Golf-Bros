@@ -1,10 +1,15 @@
-# ⛳️ Golf Season Scorecard
+# SCRATCH // Season Desk
 
 **Live:** https://golf-season.vercel.app
 
-A custom two-player golf scorekeeping app for tracking a whole season. Built
-with Next.js (App Router) and backed by Upstash Redis so every scorecard is
-saved to the cloud.
+A golf season scoring desk — a multi-player scorekeeper styled as a dark
+trading-terminal. Built with Next.js (App Router) and backed by Upstash Redis so
+every round is saved to the cloud and shared between players.
+
+Design language: near-black navy (`#0B0F14`), brass accents, JetBrains Mono
+numerals, Space Grotesk headings, with a thumb-reachable bottom nav and
+hole-by-hole stepper scoring for one-handed, on-course entry. A daylight mode is
+available for bright sun.
 
 > Auto-deploys on every push to `main` via the Vercel ↔ GitHub integration.
 

@@ -38,10 +38,10 @@ export default function ScrollX({
         {children}
       </div>
       {left && (
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-5 rounded-l-xl bg-gradient-to-r from-white/90 to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-5 rounded-l-xl bg-gradient-to-r from-panel to-transparent" />
       )}
       {right && (
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-6 rounded-r-xl bg-gradient-to-l from-white/90 to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-6 rounded-r-xl bg-gradient-to-l from-panel to-transparent" />
       )}
     </div>
   );

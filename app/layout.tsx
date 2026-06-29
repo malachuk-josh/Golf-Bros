@@ -2,15 +2,20 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Golf Season Scorecard",
-  description: "Track your golf season — scores, standings, and stats.",
+  title: "SCRATCH // Season Desk",
+  description:
+    "A golf season scoring desk — rounds, handicaps, net, match play, and standings.",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#247334",
+  themeColor: "#0B0F14",
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
 };
+
+// Apply the saved daylight/dark preference before paint to avoid a flash.
+const themeScript = `try{if(localStorage.getItem('scratch-theme')==='daylight'){document.documentElement.classList.add('daylight')}}catch(e){}`;
 
 export default function RootLayout({
   children,
@@ -19,7 +24,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="font-sans text-fairway-900">{children}</body>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body className="font-sans text-ink">{children}</body>
     </html>
   );
 }
