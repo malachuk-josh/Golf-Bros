@@ -221,24 +221,16 @@ export default function Scorecard({
 
       {/* round meta (collapsible) */}
       <Card className="p-4">
-        <button
-          type="button"
-          onClick={() => setMetaOpen((o) => !o)}
-          aria-expanded={metaOpen}
-          className="flex w-full items-center justify-between gap-3 text-left"
-        >
-          <div className="min-w-0">
-            <div className="eyebrow">// round setup</div>
-            <div className="mt-0.5 truncate font-display font-medium text-ink">
-              {draft.course || "Untitled round"}
-              <span className="ml-1 font-mono text-xs font-normal text-mut">
-                · {new Date(draft.date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })} · {draft.holeCount} holes
-                {isNine && draft.nine && draft.nine !== "single" ? ` (${draft.nine})` : ""}
-              </span>
-            </div>
+        <div className="min-w-0">
+          <div className="eyebrow">// round setup</div>
+          <div className="mt-0.5 truncate font-display font-medium text-ink">
+            {draft.course || "Untitled round"}
+            <span className="ml-1 font-mono text-xs font-normal text-mut">
+              · {new Date(draft.date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })} · {draft.holeCount} holes
+              {isNine && draft.nine && draft.nine !== "single" ? ` (${draft.nine})` : ""}
+            </span>
           </div>
-          <ChevronDown size={20} className={`shrink-0 text-mut transition-transform ${metaOpen ? "rotate-180" : ""}`} />
-        </button>
+        </div>
 
         {metaOpen && (
         <div className="mt-3 flex flex-wrap items-end gap-3">
@@ -285,6 +277,17 @@ export default function Scorecard({
         )}
         </div>
         )}
+        <div className="mt-3 flex justify-end">
+          <button
+            type="button"
+            onClick={() => setMetaOpen((o) => !o)}
+            aria-expanded={metaOpen}
+            className="flex items-center gap-1 font-mono text-xs uppercase tracking-eyebrow text-mut transition hover:text-ink"
+          >
+            {metaOpen ? "Collapse" : "Expand"}
+            <ChevronDown size={16} className={`transition-transform ${metaOpen ? "rotate-180" : ""}`} />
+          </button>
+        </div>
       </Card>
 
       {/* players */}
